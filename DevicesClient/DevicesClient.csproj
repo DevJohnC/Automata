@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <RootNamespace>Automata.Devices</RootNamespace>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <PackageReference Include="Grpc.Tools" Version="2.31.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Client\Client.csproj" />
+      <ProjectReference Include="..\DevicesApi\DevicesApi.csproj" />
+      <ProjectReference Include="..\EventsClient\EventsClient.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Protobuf Include="..\DevicesApi\*.proto" ProtoRoot=".." GrpcServices="Client" />
+    </ItemGroup>
+
+</Project>

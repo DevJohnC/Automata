@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <RootNamespace>Automata.Events</RootNamespace>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Grpc.Tools" Version="2.31.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\EventsApi\EventsApi.csproj" />
+      <ProjectReference Include="..\HostServer\HostServer.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Protobuf Include="..\EventsApi\*.proto" ProtoRoot=".." GrpcServices="Server" />
+    </ItemGroup>
+
+</Project>

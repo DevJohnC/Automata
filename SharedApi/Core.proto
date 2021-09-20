@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+option csharp_namespace = "Automata.GrpcServices";
+
+package automata.grpcServices;
+
+import "google/protobuf/empty.proto";
+
+service ResourcesService {
+  rpc GetResources(KindUri) returns (stream ResourceRecord);
+}
+
+message KindUri {
+  oneof TestUri {
+    SingularKindUri SingularUri = 1;
+    PluralKindUri PluralUri = 2;
+  }
+}
+
+message SingularKindUri {
+  string Group = 1;
+  string Version = 2;
+  string KindNameSingular = 3;
+}
+
+message PluralKindUri {
+  string Group = 1;
+  string Version = 2;
+  string KindNamePlural = 3;
+}
+
+message ResourceRecord {
+  string ResourceId = 1;
+  SingularKindUri KindUri = 2;
+  JsonToken RecordData = 3;
+}
+
+message JsonToken {
+  string EncodedBlob = 1;
+}

@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <AssemblyName>AutomataClient</AssemblyName>
+        <RootNamespace>Automata.Client</RootNamespace>
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <PackageReference Include="Google.Protobuf" Version="3.13.0" />
+        <PackageReference Include="Grpc.Core" Version="2.31.0" />
+        <PackageReference Include="Grpc.Net.Client" Version="2.38.0" />
+        <PackageReference Include="Grpc.Tools" Version="2.31.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+      <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+      <PackageReference Include="akarnokd.async-enumerable-dotnet" Version="0.0.4" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\SharedApi\SharedApi.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Protobuf Include="..\SharedApi\*.proto" ProtoRoot=".." GrpcServices="Client" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Include="..\HostServer\GrpcServices\KindUriExtensions.cs">
+        <Link>Grpc\KindUriExtensions.cs</Link>
+      </Compile>
+      <Compile Include="..\HostServer\GrpcServices\ResourceRecordExtensions.cs">
+        <Link>Grpc\ResourceRecordExtensions.cs</Link>
+      </Compile>
+    </ItemGroup>
+
+</Project>

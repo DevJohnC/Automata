@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\..\Core\CoreClient\src\CoreClient.csproj" />
+      <ProjectReference Include="..\..\..\Devices\DevicesClient\src\DevicesClient.csproj" />
+      <ProjectReference Include="..\..\LightsCommon\src\LightsCommon.csproj" />
+    </ItemGroup>
+
+</Project>

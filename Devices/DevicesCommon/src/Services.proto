@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+option csharp_namespace = "Automata.Devices.GrpcServices";
+
+package automata.devices.grpcServices;
+
+import "Core/CoreCommon/src/Core.proto";
+import "google/protobuf/empty.proto";
+
+message DeviceStatePairRequest {
+  automata.grpcServices.KindUri DeviceKind = 1;
+  automata.grpcServices.KindUri StateKind = 2;
+}
+
+message DeviceStatePair {
+  automata.grpcServices.ResourceRecord DeviceDefinition = 1;
+  automata.grpcServices.ResourceRecord DeviceState = 2;
+}
+
+message StateChangeRequest {
+  string ControllerId = 1;
+  string DeviceId = 2;
+  automata.grpcServices.ResourceRecord ControlRequest = 3; 
+}
+
+service DeviceServices {
+  rpc GetDeviceStatePairs (DeviceStatePairRequest) returns (stream DeviceStatePair) { }
+  
+  rpc RequestStateChange (StateChangeRequest) returns (google.protobuf.Empty) { }
+}

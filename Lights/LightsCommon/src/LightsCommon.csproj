@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <RootNamespace>LightsShared</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\..\Devices\DevicesCommon\src\DevicesCommon.csproj" />
+      <ProjectReference Include="..\..\..\Core\CoreCommon\src\CoreCommon.csproj" />
+    </ItemGroup>
+
+</Project>

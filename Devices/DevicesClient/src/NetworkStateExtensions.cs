@@ -35,7 +35,7 @@ namespace Automata.Devices
 
                 if (server.SupportsDevices())
                 {
-                    tasks.Add(GetStateControllers(server, cancellationToken));
+                    tasks.Add(GetServerControllers(server));
                 }
             }
 
@@ -48,22 +48,31 @@ namespace Automata.Devices
             }
 
             return result;
+
+            async Task<(IAutomataServer Server, List<ResourceDocument<DeviceController>> Controllers)> GetServerControllers(
+                IAutomataServer server)
+            {
+                var controllerList = new List<ResourceDocument<DeviceController>>();
+                
+                await foreach (var controller in server.GetStateControllers()
+                    .WithCancellation(cancellationToken))
+                {
+                    controllerList.Add(controller);
+                }
+
+                return (server, controllerList);
+            }
         }
 
-        private static async Task<(IAutomataServer, List<ResourceDocument<DeviceController>>)> GetStateControllers(
-            IAutomataServer server,
-            CancellationToken cancellationToken)
+        public static async IAsyncEnumerable<ResourceDocument<DeviceController>> GetStateControllers(
+            this IAutomataServer server)
         {
             var resourcesClient = server.CreateService<IResourceClient>();
-            var stateControllers = new List<ResourceDocument<DeviceController>>();
             await foreach (var stateController in resourcesClient
-                .GetResources<DeviceController>()
-                .WithCancellation(cancellationToken))
+                .GetResources<DeviceController>())
             {
-                stateControllers.Add(stateController);
+                yield return stateController;
             }
-
-            return (server, stateControllers);
         }
         
         public static async Task ChangeState<TDevice, TRequest>(
@@ -84,12 +93,41 @@ namespace Automata.Devices
                     SupportsMessageAndDevice(q.Controller.Record, device.ResourceId, requestKind));
 
             if (serverControllerPair == default)
-                return;
+                throw new UnableToCompleteOperationException(
+                    "Couldn't find a device controller to handle change state request for device.",
+                    device, request);
 
-            var client = serverControllerPair.Server.CreateService<IStateClient>();
+            await serverControllerPair.Server.ChangeState(
+                serverControllerPair.Controller,
+                device,
+                request,
+                cancellationToken);
+        }
 
+        public static Task ChangeState<TDevice, TRequest>(
+            this IAutomataServer server,
+            ResourceDocument<DeviceController> controller,
+            ResourceDocument<TDevice> device,
+            TRequest request,
+            CancellationToken cancellationToken = default)
+            where TDevice : DeviceDefinition
+            where TRequest : DeviceControlRequest
+        {
+            return server.CreateService<IStateClient>()
+                .ChangeState(controller, device, request, cancellationToken);
+        }
+        
+        public static async Task ChangeState<TDevice, TRequest>(
+            this IStateClient client,
+            ResourceDocument<DeviceController> controller,
+            ResourceDocument<TDevice> device,
+            TRequest request,
+            CancellationToken cancellationToken = default)
+            where TDevice : DeviceDefinition
+            where TRequest : DeviceControlRequest
+        {
             await client.RequestStateChange(
-                serverControllerPair.Controller.ResourceId,
+                controller.ResourceId,
                 device.ResourceId,
                 new ResourceDocument<TRequest>(Guid.NewGuid(), request),
                 cancellationToken);

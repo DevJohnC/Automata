@@ -11,31 +11,19 @@ namespace Automata.Devices
 {
     public static class NetworkStateExtensions
     {
-        private static bool SupportsMessageAndDevice(
-            DeviceController controller,
-            Guid deviceId,
-            KindModel requestKind)
-        {
-            if (!controller.DeviceIds.Contains(deviceId))
-                return false;
-
-            return controller.ControlRequestKinds.Any(
-                q => requestKind.Name.MatchesUri(q));
-        }
-        
-        private static async Task<Dictionary<IAutomataServer, List<ResourceDocument<DeviceController>>>> GetStateControllers(
+        public static async Task<NetworkDeviceStateControllers> GetStateControllers(
             this AutomataNetwork network,
             CancellationToken cancellationToken = default)
         {
-            var result = new Dictionary<IAutomataServer, List<ResourceDocument<DeviceController>>>();
-            var tasks = new List<Task<(IAutomataServer Server, List<ResourceDocument<DeviceController>> Controllers)>>(network.Servers.Count);
+            var result = new Dictionary<IAutomataServer, ServerDeviceStateControllers>();
+            var tasks = new List<Task<ServerDeviceStateControllers>>(network.Servers.Count);
             foreach (var server in network.Servers)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 if (server.SupportsDevices())
                 {
-                    tasks.Add(GetServerControllers(server));
+                    tasks.Add(server.GetStateControllers(cancellationToken));
                 }
             }
 
@@ -44,35 +32,28 @@ namespace Automata.Devices
                 var task = await Task.WhenAny(tasks);
                 var taskResult = await task;
                 tasks.Remove(task);
-                result.Add(taskResult.Server, taskResult.Controllers);
+                result.Add(taskResult.Server, taskResult);
             }
 
-            return result;
-
-            async Task<(IAutomataServer Server, List<ResourceDocument<DeviceController>> Controllers)> GetServerControllers(
-                IAutomataServer server)
-            {
-                var controllerList = new List<ResourceDocument<DeviceController>>();
-                
-                await foreach (var controller in server.GetStateControllers()
-                    .WithCancellation(cancellationToken))
-                {
-                    controllerList.Add(controller);
-                }
-
-                return (server, controllerList);
-            }
+            return new NetworkDeviceStateControllers(
+                result,
+                network);
         }
 
-        public static async IAsyncEnumerable<ResourceDocument<DeviceController>> GetStateControllers(
-            this IAutomataServer server)
+        public static async Task<ServerDeviceStateControllers> GetStateControllers(
+            this IAutomataServer server,
+            CancellationToken cancellationToken = default)
         {
             var resourcesClient = server.CreateService<IResourceClient>();
+            var controllerList = new List<ResourceDocument<DeviceController>>();
             await foreach (var stateController in resourcesClient
-                .GetResources<DeviceController>())
+                .GetResources<DeviceController>()
+                .WithCancellation(cancellationToken))
             {
-                yield return stateController;
+                controllerList.Add(stateController);
             }
+
+            return new ServerDeviceStateControllers(server, controllerList);
         }
         
         public static async Task ChangeState<TDevice, TRequest>(
@@ -83,22 +64,71 @@ namespace Automata.Devices
             where TDevice : DeviceDefinition
             where TRequest : DeviceControlRequest
         {
-            //  todo: refactor this to be readable
-            //  todo: prefer the server hosting the device?
-            var requestKind = KindModel.GetKind(typeof(TRequest));
-            var serverControllerPair = (await network.GetStateControllers(cancellationToken))
-                .SelectMany(q => q.Value.Select(
-                    q2 => (Server: q.Key, Controller: q2)))
-                .FirstOrDefault(q => 
-                    SupportsMessageAndDevice(q.Controller.Record, device.ResourceId, requestKind));
+            var networkDeviceControllers = await network.GetStateControllers(cancellationToken);
 
-            if (serverControllerPair == default)
+            await networkDeviceControllers.ChangeState(device, request, cancellationToken);
+        }
+
+        public static async Task ChangeState<TDevice, TRequest>(
+            this NetworkDeviceStateControllers networkDeviceControllers,
+            ResourceDocument<TDevice> device,
+            TRequest request,
+            CancellationToken cancellationToken = default)
+            where TDevice : DeviceDefinition
+            where TRequest : DeviceControlRequest
+        {
+            foreach (var server in networkDeviceControllers.Network.Servers)
+            {
+                var serverDeviceControllers = networkDeviceControllers[server];
+                if (serverDeviceControllers == null)
+                    continue;
+                var candidates = serverDeviceControllers.GetCandidates<TDevice, TRequest>(device);
+                if (candidates.Count == 0)
+                    continue;
+                
+                await server.ChangeState(
+                    candidates[0],
+                    device,
+                    request,
+                    cancellationToken);
+                return;
+            }
+
+            throw new UnableToCompleteOperationException(
+                "Couldn't find a device controller to handle change state request for device.",
+                device, request);
+        }
+        
+        public static async Task ChangeState<TDevice, TRequest>(
+            this IAutomataServer server,
+            ResourceDocument<TDevice> device,
+            TRequest request,
+            CancellationToken cancellationToken = default)
+            where TDevice : DeviceDefinition
+            where TRequest : DeviceControlRequest
+        {
+            var serverControllers = await server.GetStateControllers(cancellationToken);
+            await serverControllers.ChangeState(device, request, cancellationToken);
+        }
+
+        public static async Task ChangeState<TDevice, TRequest>(
+            this ServerDeviceStateControllers serverControllers,
+            ResourceDocument<TDevice> device,
+            TRequest request,
+            CancellationToken cancellationToken = default)
+            where TDevice : DeviceDefinition
+            where TRequest : DeviceControlRequest
+        {
+            var controllerCandidates = serverControllers.GetCandidates<TDevice, TRequest>(
+                device);
+
+            if (controllerCandidates.Count == 0)
                 throw new UnableToCompleteOperationException(
                     "Couldn't find a device controller to handle change state request for device.",
                     device, request);
-
-            await serverControllerPair.Server.ChangeState(
-                serverControllerPair.Controller,
+            
+            await serverControllers.Server.ChangeState(
+                controllerCandidates[0],
                 device,
                 request,
                 cancellationToken);

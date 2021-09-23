@@ -5,19 +5,19 @@ using System.Threading.Tasks;
 namespace Automata.Client
 {
     /// <summary>
-    /// Network of Automata servers that communicate using gRPC services.
+    /// Network of Automata servers.
     /// </summary>
-    public class GrpcAutomataNetwork
+    public class AutomataNetwork
     {
-        private readonly List<GrpcAutomataServer> _servers = new();
+        private readonly List<IAutomataServer> _servers = new();
         
         public NetworkKindGraph KindGraph { get; } = new();
 
-        public IReadOnlyCollection<GrpcAutomataServer> Servers => _servers;
+        public IReadOnlyCollection<IAutomataServer> Servers => _servers;
         
-        public async Task AddServer(GrpcAutomataServer server, CancellationToken cancellationToken)
+        public async Task AddServer(IAutomataServer server, CancellationToken cancellationToken)
         {
-            await server.UpdateKindGraph(cancellationToken);
+            await server.RefreshKindGraph(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             KindGraph.MergeServerGraph(server, server.KindGraph);
             _servers.Add(server);

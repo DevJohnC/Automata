@@ -1,4 +1,4 @@
-﻿namespace Automata.Devices.Networking
+﻿namespace Automata.Devices
 {
     public record DeviceStatePair(
         SerializedResourceDocument DeviceDefinition,

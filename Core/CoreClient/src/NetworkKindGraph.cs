@@ -6,9 +6,9 @@ namespace Automata.Client
 {
     public class NetworkKindGraph
     {
-        private readonly Dictionary<GrpcAutomataServer, KindGraph> _serverGraphs = new();
+        private readonly Dictionary<IAutomataServer, KindGraph> _serverGraphs = new();
 
-        internal void MergeServerGraph(GrpcAutomataServer server, KindGraph serverKindGraph)
+        internal void MergeServerGraph(IAutomataServer server, KindGraph serverKindGraph)
         {
             _serverGraphs[server] = serverKindGraph;
         }

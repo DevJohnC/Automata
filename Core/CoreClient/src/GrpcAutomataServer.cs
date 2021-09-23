@@ -1,38 +1,47 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Automata.Client.Networking;
 using Automata.Client.Networking.Grpc;
+using Automata.Client.Resources;
+using Automata.Client.Resources.Grpc;
+using Automata.Client.Services;
 using Automata.Kinds;
 
 namespace Automata.Client
 {
-    public class GrpcAutomataServer
+    public class GrpcAutomataServer : IAutomataServer
     {
-        private readonly INetworkServiceFactory<INetworkClient> _serviceFactory;
-        
+        private readonly IServerServiceProvider<GrpcAutomataServer> _services;
+
         public KindGraph? KindGraph { get; private set; }
         
         public Uri ServerUri { get; }
         
         public IGrpcChannelFactory ChannelFactory { get; }
 
-        public GrpcAutomataServer(string serverUri, IGrpcChannelFactory? grpcChannelFactory = null) :
-            this(new Uri(serverUri), grpcChannelFactory)
+        public GrpcAutomataServer(
+            string serverUri,
+            IServerServiceProvider<GrpcAutomataServer> services,
+            IGrpcChannelFactory? grpcChannelFactory = null) :
+            this(new Uri(serverUri), services, grpcChannelFactory)
         {
         }
 
-        public GrpcAutomataServer(Uri serverUri, IGrpcChannelFactory? grpcChannelFactory = null)
+        public GrpcAutomataServer(
+            Uri serverUri,
+            IServerServiceProvider<GrpcAutomataServer> services,
+            IGrpcChannelFactory? grpcChannelFactory = null)
         {
             ServerUri = serverUri;
             ChannelFactory = grpcChannelFactory ?? InsecureChannelFactory.SharedInstance;
-            _serviceFactory = new GrpcNetworkServiceFactory(ChannelFactory);
+            _services = services;
+            _services.TryRegister<GrpcAutomataServer, IResourceClient>(server => new GrpcResourceClient(
+                server,
+                ChannelFactory.CreateChannel(server)));
         }
 
-        public IAsyncEnumerable<SerializedResourceDocument> GetResources(KindName? kindName = null)
+        /*public IAsyncEnumerable<SerializedResourceDocument> GetResources(KindName? kindName = null)
         {
             return Impl(default);
             
@@ -62,19 +71,32 @@ namespace Automata.Client
                     yield return resource;
                 }
             }
-        }
+        }*/
 
         [MemberNotNull(nameof(KindGraph))]
-        public async Task UpdateKindGraph(CancellationToken cancellationToken)
+        public async Task RefreshKindGraph(CancellationToken cancellationToken = default)
         {
             var graphBuilder = new KindGraphBuilder(new());
-            await using var client = _serviceFactory.CreateClient(this);
-            await foreach (var kindResource in client.GetResources<KindRecord>(cancellationToken))
+            await using var client = _services.GetService<IResourceClient>(this);
+            await foreach (var kindResource in client.GetResources<KindRecord>()
+                .WithCancellation(cancellationToken))
             {
                 graphBuilder = graphBuilder.DefineKind(kindResource);
             }
 
             KindGraph = graphBuilder.Build();
+        }
+
+        public bool SupportsService<TService>()
+            where TService : IAutomataNetworkService
+        {
+            return _services.IsServiceRegistered<TService>();
+        }
+
+        public TService CreateService<TService>()
+            where TService : IAutomataNetworkService
+        {
+            return _services.GetService<TService>(this);
         }
     }
 }

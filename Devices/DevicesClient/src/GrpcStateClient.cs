@@ -5,89 +5,45 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Automata.Client;
+using Automata.Devices.GrpcServices;
 using Automata.GrpcServices;
-using Automata.Kinds;
+using Grpc.Core;
 
 namespace Automata.Devices
 {
-    public class GrpcStateClient
+    public class GrpcStateClient : IStateClient
     {
-        private readonly ConditionalWeakTable<GrpcAutomataServer, List<ResourceDocument<DeviceController>>>
-            _serverStateControllers = new();
-
-        internal GrpcStateClient(GrpcAutomataNetwork network)
+        public static IStateClient Factory(GrpcAutomataServer server)
         {
-            Network = network;
+            return new GrpcStateClient(
+                server,
+                server.ChannelFactory.CreateChannel(server));
         }
 
-        public GrpcAutomataNetwork Network { get; }
+        private readonly DeviceServices.DeviceServicesClient _client;
+        
+        private readonly GrpcAutomataServer _server;
+        
+        public IAutomataServer Server => _server;
 
-        private bool SupportsMessageAndDevice(DeviceController controller,
+        public GrpcStateClient(GrpcAutomataServer server, ChannelBase channel)
+        {
+            _server = server;
+            _client = new GrpcServices.DeviceServices.DeviceServicesClient(channel);
+        }
+
+        public async Task RequestStateChange(Guid controllerId,
             Guid deviceId,
-            KindModel requestKind)
+            ResourceDocument deviceControlRequest,
+            CancellationToken cancellationToken = default)
         {
-            if (!controller.DeviceIds.Contains(deviceId))
-                return false;
-
-            return controller.ControlRequestKinds.Any(
-                q => requestKind.Name.MatchesUri(q));
-        }
-
-        public async Task ChangeState<TDevice, TRequest>(
-            ResourceDocument<TDevice> device, TRequest request)
-            where TDevice : DeviceDefinition
-            where TRequest : DeviceControlRequest
-        {
-            //  todo: refactor this to be readable
-            //  todo: prefer the server hosting the device?
-            var requestKind = KindModel.GetKind(typeof(TRequest));
-            var serverControllerPair = _serverStateControllers
-                .SelectMany(q => q.Value.Select(
-                    q2 => (Server: q.Key, Controller: q2)))
-                .FirstOrDefault(q => 
-                        SupportsMessageAndDevice(q.Controller.Record, device.ResourceId, requestKind));
-
-            if (serverControllerPair == default)
-                return;
-
-            var client = new GrpcServices.DeviceServices.DeviceServicesClient(
-                serverControllerPair.Server.ChannelFactory.CreateChannel(serverControllerPair.Server));
-
-            client.RequestStateChangeAsync(new()
+            await _client.RequestStateChangeAsync(new()
             {
-                ControllerId = serverControllerPair.Controller.ResourceId.ToString(),
-                DeviceId = device.ResourceId.ToString(),
+                ControllerId = controllerId.ToString(),
+                DeviceId = deviceId.ToString(),
                 ControlRequest = ResourceRecord.FromNative(
-                    new ResourceDocument<TRequest>(Guid.NewGuid(), request).Serialize())
-            });
-        }
-
-        public async Task RefreshStateControllers(CancellationToken cancellationToken = default)
-        {
-            var tasks = new List<Task>(Network.Servers.Count);
-            foreach (var server in Network.Servers)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                if (server.SupportsDevices())
-                {
-                    tasks.Add(RefreshStateControllers(server, cancellationToken));
-                }
-            }
-
-            await Task.WhenAll(tasks);
-        }
-
-        private async Task RefreshStateControllers(GrpcAutomataServer server, CancellationToken cancellationToken)
-        {
-            var stateControllers = new List<ResourceDocument<DeviceController>>();
-            await foreach (var stateController in server
-                .GetResources<DeviceController>()
-                .WithCancellation(cancellationToken))
-            {
-                stateControllers.Add(stateController);
-            }
-            _serverStateControllers.AddOrUpdate(server, stateControllers);
+                    deviceControlRequest.Serialize())
+            }, cancellationToken: cancellationToken);
         }
     }
 }

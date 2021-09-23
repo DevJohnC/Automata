@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Automata.Client;
 using Automata.Client.Networking.Grpc;
+using Automata.Client.Services;
 using Automata.Devices;
 using LightsClient;
 using LightsShared;
@@ -14,9 +15,16 @@ namespace LightsConsole
     {
         static async Task Main(string[] args)
         {
-            var network = new GrpcAutomataNetwork();
-            var server = new GrpcAutomataServer("http://localhost:5000",
-                new SharedChannelFactory(InsecureChannelFactory.SharedInstance));
+            var grpcNetworkServices = new ServerServiceProvider<GrpcAutomataServer>();
+            grpcNetworkServices.AddDevices();
+
+            var grpcChannelFactory = new SharedChannelFactory(InsecureChannelFactory.SharedInstance);
+            
+            var network = new AutomataNetwork();
+            var server = new GrpcAutomataServer(
+                "http://localhost:5000",
+                grpcNetworkServices,
+                grpcChannelFactory);
             
             var attemptCount = 0;
             while (attemptCount < 5 &&
@@ -38,9 +46,8 @@ namespace LightsConsole
                 throw new Exception("Couldn't connect to server.");
 
             var syncLock = new object();
-            var client = network.CreateDevicesClient();
             var lights = new List<TrackingDeviceHandle<LightSwitch, LightSwitchState>>();
-            await foreach (var light in client.GetLights())
+            await foreach (var light in network.GetLights())
             {
                 var trackingHandler = await light.GetTrackingHandle();
                 trackingHandler.StateChanged += StateChanged;
@@ -65,14 +72,13 @@ namespace LightsConsole
 
             async Task ChangeStates()
             {
-                var stateClient = await network.CreateStateClient();
                 var tasks = new List<Task>();
                 foreach (var light in lights)
                 {
                     if (light.GetStateSnapshot().Record.PowerState == LightSwitchPowerState.Off)
-                        tasks.Add(stateClient.TurnOn(light));
+                        tasks.Add(network.TurnOn(light));
                     else
-                        tasks.Add(stateClient.TurnOff(light));
+                        tasks.Add(network.TurnOff(light));
                 }
 
                 await Task.WhenAll(tasks);

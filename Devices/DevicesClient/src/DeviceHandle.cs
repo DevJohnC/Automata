@@ -9,8 +9,8 @@ namespace Automata.Devices
     public abstract class DeviceHandle
     {
         internal DeviceHandle(
-            GrpcAutomataNetwork network,
-            GrpcAutomataServer server,
+            AutomataNetwork network,
+            IAutomataServer server,
             Guid deviceId,
             DeviceDefinition device,
             Guid stateId,
@@ -24,8 +24,8 @@ namespace Automata.Devices
             StateId = stateId;
         }
 
-        public GrpcAutomataNetwork Network { get; }
-        public GrpcAutomataServer Server { get; }
+        public AutomataNetwork Network { get; }
+        public IAutomataServer Server { get; }
         
         public Guid DeviceId { get; }
         
@@ -56,8 +56,8 @@ namespace Automata.Devices
         public new TState State { get; }
         
         public DeviceHandle(
-            GrpcAutomataNetwork network,
-            GrpcAutomataServer server,
+            AutomataNetwork network,
+            IAutomataServer server,
             ResourceDocument<TDevice> device,
             ResourceDocument<TState> state) :
             base(network, server,

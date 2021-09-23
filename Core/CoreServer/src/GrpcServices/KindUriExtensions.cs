@@ -45,5 +45,31 @@ namespace Automata.GrpcServices
                 _ => throw new InvalidOperationException()
             };
         }
+
+        public static KindUri FromNative(Automata.Kinds.KindUri nativeKindUri)
+        {
+            if (nativeKindUri.IsPlural)
+            {
+                return new KindUri()
+                {
+                    PluralUri = new()
+                    {
+                        Group = nativeKindUri.Group,
+                        Version = nativeKindUri.Version,
+                        KindNamePlural = nativeKindUri.Name
+                    }
+                };
+            }
+
+            return new KindUri()
+            {
+                SingularUri = new()
+                {
+                    Group = nativeKindUri.Group,
+                    Version = nativeKindUri.Version,
+                    KindNameSingular = nativeKindUri.Name
+                }
+            };
+        }
     }
 }

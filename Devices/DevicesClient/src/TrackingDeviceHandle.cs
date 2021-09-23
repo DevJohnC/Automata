@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Automata.Client;
 using Automata.Events;
-using Automata;
 
 namespace Automata.Devices
 {
@@ -14,17 +13,23 @@ namespace Automata.Devices
         protected readonly Guid StateId;
         protected DeviceState StateSnapshot;
         
-        public GrpcAutomataServer Server { get; }
+        public AutomataNetwork Network { get; }
+        
+        public IAutomataServer Server { get; }
+        
         public Guid DeviceId { get; }
+        
         public DeviceDefinition Device { get; }
 
         internal TrackingDeviceHandle(
-            GrpcAutomataServer server,
+            AutomataNetwork network,
+            IAutomataServer server,
             Guid deviceId,
             DeviceDefinition device,
             Guid stateId,
             DeviceState stateSnapshot)
         {
+            Network = network;
             StateId = stateId;
             StateSnapshot = stateSnapshot;
             Server = server;
@@ -52,22 +57,20 @@ namespace Automata.Devices
         where TDevice : DeviceDefinition
         where TState : DeviceState
     {
-        private readonly GrpcEventsClient _eventClient;
         private readonly StateEventObserver _stateObserver;
         private IAsyncDisposable? _observerCancellation;
         public new TDevice Device { get; }
 
         public TrackingDeviceHandle(
-            GrpcAutomataNetwork network,
-            GrpcAutomataServer server,
+            AutomataNetwork network,
+            IAutomataServer server,
             Guid deviceId,
             TDevice device,
             Guid stateId,
             TState stateSnapshot) :
-            base(server, deviceId, device, stateId, stateSnapshot)
+            base(network, server, deviceId, device, stateId, stateSnapshot)
         {
             Device = device;
-            _eventClient = network.CreateEventsClient();
             _stateObserver = new StateEventObserver(this);
         }
 
@@ -79,8 +82,10 @@ namespace Automata.Devices
 
         internal async Task StartEventsStream(CancellationToken cancellationToken)
         {
-            _observerCancellation = await _eventClient.AddObserver(
-                Server, _stateObserver, cancellationToken,
+            _observerCancellation = await Network.AddObserver(
+                Server,
+                _stateObserver,
+                cancellationToken,
                 $"$[?(@.deviceId == '{DeviceId.ToString().ToLowerInvariant()}')]");
         }
 

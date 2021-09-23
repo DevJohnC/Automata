@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Automata.Client;
@@ -7,150 +8,58 @@ using Automata.Events.GrpcServices;
 using Automata.GrpcServices;
 using Automata.Kinds;
 using Grpc.Core;
+using KindUri = Automata.Kinds.KindUri;
 using PluralKindUri = Automata.GrpcServices.PluralKindUri;
 
 namespace Automata.Events
 {
-    public class GrpcEventsClient
+    public class GrpcEventsClient : IEventsClient
     {
-        public GrpcAutomataNetwork Network { get; }
-
-        public GrpcEventsClient(GrpcAutomataNetwork network)
+        public static IEventsClient Factory(GrpcAutomataServer server)
         {
-            Network = network;
-        }
-
-        public Task<IAsyncDisposable> AddObserver<TEvent>(
-            IEventObserver<TEvent> observer,
-            params string[] jsonPathFilter)
-            where TEvent : EventRecord
-        {
-            return AddObserver(observer, default, jsonPathFilter);
+            return new GrpcEventsClient(
+                server.ChannelFactory.CreateChannel(server),
+                server);
         }
         
-        public async Task<IAsyncDisposable> AddObserver<TEvent>(
-            IEventObserver<TEvent> observer,
-            CancellationToken cancellationToken,
-            params string[] jsonPathFilter)
-            where TEvent : EventRecord
-        {
-            var disposables = new List<IAsyncDisposable>();
-            foreach (var server in Network.Servers)
-            {
-                try
-                {
-                    disposables.Add(await AddObserver(server, observer, cancellationToken, jsonPathFilter));
-                }
-                catch
-                {
-                    //  safely dispose
-                    await using var collection = new ObserverCancellationCollection(disposables);
+        private readonly EventsService.EventsServiceClient _client;
 
-                    throw;
-                }
-            }
-            
-            return new ObserverCancellationCollection(disposables);
-        }
-        
-        public Task<IAsyncDisposable> AddObserver<TEvent>(
-            GrpcAutomataServer server,
-            IEventObserver<TEvent> observer,
-            params string[] jsonPathFilter)
-            where TEvent : EventRecord
+        private readonly GrpcAutomataServer _server;
+
+        public IAutomataServer Server => _server;
+
+        public GrpcEventsClient(ChannelBase channelBase, GrpcAutomataServer server)
         {
-            return AddObserver(server, observer, default, jsonPathFilter);
+            _server = server;
+            _client = new EventsService.EventsServiceClient(channelBase);
         }
-        
-        public async Task<IAsyncDisposable> AddObserver<TEvent>(
-            GrpcAutomataServer server,
-            IEventObserver<TEvent> observer,
-            CancellationToken cancellationToken,
+
+        public async Task<IAsyncEnumerable<SerializedResourceDocument>> ObserveEvents(
+            KindUri eventKindUri,
+            CancellationToken requestCancellationToken = default,
             params string[] jsonPathFilter)
-            where TEvent : EventRecord
         {
-            var client = new EventsService.EventsServiceClient(
-                server.ChannelFactory.CreateChannel(server));
             var filter = new EventSubscriptionFilter();
             filter.JsonPathFilters.AddRange(jsonPathFilter);
-            var streamingCall = client.ObserveEvents(new()
+            var streamingCall = _client.ObserveEvents(new()
             {
-                KindUri = new()
-                {
-                    PluralUri = PluralKindUri.FromKindName(KindModel.GetKind(typeof(TEvent)).Name)
-                },
+                KindUri = Automata.GrpcServices.KindUri.FromNative(eventKindUri),
                 Filter = filter
-            }, cancellationToken: cancellationToken);
+            }, cancellationToken: requestCancellationToken);
+            //  todo: await for the round-trip to establish the events observer
+            //await streamingCall.ResponseHeadersAsync;
             
-            return new ObserverCancellation<TEvent>(observer, streamingCall);
-        }
+            return Impl();
 
-        private class ObserverCancellation<TEvent> : IAsyncDisposable
-            where TEvent : EventRecord
-        {
-            private readonly IEventObserver<TEvent> _observer;
-            private readonly AsyncServerStreamingCall<ResourceRecord> _streamingCall;
-            private readonly Task _runTask;
-            private readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
-
-            public ObserverCancellation(
-                IEventObserver<TEvent> observer,
-                AsyncServerStreamingCall<ResourceRecord> streamingCall)
+            async IAsyncEnumerable<SerializedResourceDocument> Impl(
+                [EnumeratorCancellation] CancellationToken stoppingToken = default)
             {
-                _observer = observer;
-                _streamingCall = streamingCall;
-                _runTask = Run(_cancellation.Token);
-            }
-
-            private async Task Run(CancellationToken stoppingToken)
-            {
-                while (await _streamingCall.ResponseStream.MoveNext(stoppingToken))
+                using (streamingCall)
                 {
-                    var @event = _streamingCall.ResponseStream.Current
-                        .ToResourceDocument()
-                        .Deserialize<TEvent>();
-                    //  todo: consider propagating the stopping token here
-                    await _observer.Next(@event);
-                }
-            }
-            
-            public async ValueTask DisposeAsync()
-            {
-                _cancellation.Cancel();
-                try
-                {
-                    await _runTask;
-                }
-                catch (Exception e)
-                {
-                    //  todo: properly log
-                    Console.WriteLine(e);
-                }
-                _cancellation.Dispose();
-                _streamingCall.Dispose();
-            }
-        }
-
-        private class ObserverCancellationCollection : IAsyncDisposable
-        {
-            private readonly IReadOnlyList<IAsyncDisposable> _disposables;
-
-            public ObserverCancellationCollection(IReadOnlyList<IAsyncDisposable> disposables)
-            {
-                _disposables = disposables;
-            }
-            
-            public async ValueTask DisposeAsync()
-            {
-                foreach (var disposable in _disposables)
-                {
-                    try
+                    while (await streamingCall.ResponseStream.MoveNext(stoppingToken))
                     {
-                        await disposable.DisposeAsync();
-                    }
-                    catch
-                    {
-                        // ignored
+                        stoppingToken.ThrowIfCancellationRequested();
+                        yield return streamingCall.ResponseStream.Current.ToNative();
                     }
                 }
             }

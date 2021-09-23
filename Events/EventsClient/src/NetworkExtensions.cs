@@ -30,8 +30,8 @@ namespace Automata.Events
             {
                 try
                 {
-                    disposables.Add(await network.AddObserver(
-                        server, observer, cancellationToken, jsonPathFilter));
+                    disposables.Add(await server.AddObserver(
+                        observer, cancellationToken, jsonPathFilter));
                 }
                 catch
                 {
@@ -46,23 +46,20 @@ namespace Automata.Events
         }
         
         public static Task<IAsyncDisposable> AddObserver<TEvent>(
-            this AutomataNetwork network,
-            IAutomataServer server,
+            this IAutomataServer server,
             IEventObserver<TEvent> observer,
             CancellationToken cancellationToken,
             params string[] jsonPathFilter)
             where TEvent : EventRecord
         {
-            return network.AddObserver(
-                server.CreateService<IEventsClient>(),
+            return server.CreateService<IEventsClient>().AddObserver(
                 observer,
                 cancellationToken,
                 jsonPathFilter);
         }
         
         public static async Task<IAsyncDisposable> AddObserver<TEvent>(
-            this AutomataNetwork network,
-            IEventsClient client,
+            this IEventsClient client,
             IEventObserver<TEvent> observer,
             CancellationToken cancellationToken,
             params string[] jsonPathFilter)

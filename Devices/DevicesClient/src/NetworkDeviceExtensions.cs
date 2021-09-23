@@ -23,7 +23,7 @@ namespace Automata.Devices
                 List<IAsyncEnumerable<DeviceHandle<TDevice, TState>>> streams = new();
                 foreach (var server in network.Servers)
                 {
-                    streams.Add(network.GetDevices<TDevice, TState>(server));
+                    streams.Add(server.GetDevices<TDevice, TState>());
                 }
 
                 await foreach (var deviceHandle in AsyncEnumerable
@@ -36,17 +36,15 @@ namespace Automata.Devices
         }
 
         public static IAsyncEnumerable<DeviceHandle<TDevice, TState>> GetDevices<TDevice, TState>(
-            this AutomataNetwork network,
-            IAutomataServer server)
+            this IAutomataServer server)
             where TDevice : notnull, DeviceDefinition
             where TState : notnull, DeviceState
         {
-            return network.GetDevices<TDevice, TState>(server.CreateService<IDevicesClient>());
+            return server.CreateService<IDevicesClient>().GetDevices<TDevice, TState>();
         }
         
         public static IAsyncEnumerable<DeviceHandle<TDevice, TState>> GetDevices<TDevice, TState>(
-            this AutomataNetwork network,
-            IDevicesClient devicesClient)
+            this IDevicesClient devicesClient)
             where TDevice : notnull, DeviceDefinition
             where TState : notnull, DeviceState
         {
@@ -63,7 +61,6 @@ namespace Automata.Devices
                     .WithCancellation(cancellationToken))
                 {
                     yield return new DeviceHandle<TDevice, TState>(
-                        network,
                         devicesClient.Server,
                         pair.DeviceDefinition.Deserialize<TDevice>(),
                         pair.DeviceState.Deserialize<TState>());

@@ -12,9 +12,7 @@ namespace Automata.Devices
         
         protected readonly Guid StateId;
         protected DeviceState StateSnapshot;
-        
-        public AutomataNetwork Network { get; }
-        
+
         public IAutomataServer Server { get; }
         
         public Guid DeviceId { get; }
@@ -22,14 +20,12 @@ namespace Automata.Devices
         public DeviceDefinition Device { get; }
 
         internal TrackingDeviceHandle(
-            AutomataNetwork network,
             IAutomataServer server,
             Guid deviceId,
             DeviceDefinition device,
             Guid stateId,
             DeviceState stateSnapshot)
         {
-            Network = network;
             StateId = stateId;
             StateSnapshot = stateSnapshot;
             Server = server;
@@ -62,13 +58,12 @@ namespace Automata.Devices
         public new TDevice Device { get; }
 
         public TrackingDeviceHandle(
-            AutomataNetwork network,
             IAutomataServer server,
             Guid deviceId,
             TDevice device,
             Guid stateId,
             TState stateSnapshot) :
-            base(network, server, deviceId, device, stateId, stateSnapshot)
+            base(server, deviceId, device, stateId, stateSnapshot)
         {
             Device = device;
             _stateObserver = new StateEventObserver(this);
@@ -82,8 +77,7 @@ namespace Automata.Devices
 
         internal async Task StartEventsStream(CancellationToken cancellationToken)
         {
-            _observerCancellation = await Network.AddObserver(
-                Server,
+            _observerCancellation = await Server.AddObserver(
                 _stateObserver,
                 cancellationToken,
                 $"$[?(@.deviceId == '{DeviceId.ToString().ToLowerInvariant()}')]");

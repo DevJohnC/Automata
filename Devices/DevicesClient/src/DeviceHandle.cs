@@ -9,22 +9,19 @@ namespace Automata.Devices
     public abstract class DeviceHandle
     {
         internal DeviceHandle(
-            AutomataNetwork network,
             IAutomataServer server,
             Guid deviceId,
             DeviceDefinition device,
             Guid stateId,
             DeviceState state)
         {
-            Network = network;
             Server = server;
             Device = device;
             State = state;
             DeviceId = deviceId;
             StateId = stateId;
         }
-
-        public AutomataNetwork Network { get; }
+        
         public IAutomataServer Server { get; }
         
         public Guid DeviceId { get; }
@@ -56,11 +53,10 @@ namespace Automata.Devices
         public new TState State { get; }
         
         public DeviceHandle(
-            AutomataNetwork network,
             IAutomataServer server,
             ResourceDocument<TDevice> device,
             ResourceDocument<TState> state) :
-            base(network, server,
+            base(server,
                 device.ResourceId, device.Record,
                 state.ResourceId, state.Record)
         {
@@ -72,7 +68,6 @@ namespace Automata.Devices
             CancellationToken cancellationToken = default)
         {
             var trackingHandle = new TrackingDeviceHandle<TDevice, TState>(
-                Network,
                 Server,
                 DeviceId,
                 Device,

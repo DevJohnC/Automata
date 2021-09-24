@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Automata.Client
 {
-    public delegate void ServerDiscoveryEvent(string endPoint);
+    public delegate void ServerDiscoveryEvent(Uri endPoint);
     
     public interface INetworkWatcher : IAsyncDisposable
     {

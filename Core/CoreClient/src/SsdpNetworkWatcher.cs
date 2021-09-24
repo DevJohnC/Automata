@@ -74,12 +74,12 @@ namespace Automata.Client
                 if (!e.IsNewlyDiscovered)
                     return;
                 ServerAvailable?.Invoke(
-                    $"{e.DiscoveredDevice.DescriptionLocation.Scheme}://{e.DiscoveredDevice.DescriptionLocation.Host}:{e.DiscoveredDevice.DescriptionLocation.Port}");
+                    new($"{e.DiscoveredDevice.DescriptionLocation.Scheme}://{e.DiscoveredDevice.DescriptionLocation.Host}:{e.DiscoveredDevice.DescriptionLocation.Port}"));
             };
             deviceLocator.DeviceUnavailable += (s, e) =>
             {
                 ServerUnavailable?.Invoke(
-                    $"{e.DiscoveredDevice.DescriptionLocation.Scheme}://{e.DiscoveredDevice.DescriptionLocation.Host}:{e.DiscoveredDevice.DescriptionLocation.Port}");
+                    new($"{e.DiscoveredDevice.DescriptionLocation.Scheme}://{e.DiscoveredDevice.DescriptionLocation.Host}:{e.DiscoveredDevice.DescriptionLocation.Port}"));
             };
             deviceLocator.StartListeningForNotifications();
             try

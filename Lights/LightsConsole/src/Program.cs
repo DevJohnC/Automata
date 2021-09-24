@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Automata;
 using Automata.Client;
 using Automata.Client.Networking.Grpc;
 using Automata.Client.Services;
@@ -23,34 +24,26 @@ namespace LightsConsole
             var network = new AutomataNetwork();
 
             await using var networkWatcher = new SsdpNetworkWatcher();
-
-            networkWatcher.ServerAvailable += async (endpoint) =>
-            {
-                Console.WriteLine("Discovered server at: {0}", endpoint);
-                var server = new GrpcAutomataServer(
-                    endpoint,
-                    grpcNetworkServices,
-                    grpcChannelFactory);
-                await network.AddServer(server, default);
-            };
             
-            await networkWatcher.Start(default);
-
-            await Task.Delay(-1);
-
-            if (network.Servers.Count == 0)
-                throw new Exception("Couldn't connect to server.");
-
             var syncLock = new object();
             var lights = new List<TrackingDeviceHandle<LightSwitch, LightSwitchState>>();
-            await foreach (var light in network.GetLights())
-            {
-                var trackingHandler = await light.GetTrackingHandle();
-                trackingHandler.StateChanged += StateChanged;
-                lights.Add(trackingHandler);
-            }
 
+            network.ServerAdded += async (_, server, ct) =>
+            {
+                await foreach (var light in server.GetLights()
+                    .WithCancellation(ct))
+                {
+                    var trackingHandler = await light.GetTrackingHandle(ct);
+                    trackingHandler.StateChanged += StateChanged;
+                    lights.Add(trackingHandler);
+                }
+                Render();
+            };
+            
             Render();
+
+            await network.AddNetworkWatcher(networkWatcher, endpoint =>
+                new GrpcAutomataServer(endpoint, grpcNetworkServices, grpcChannelFactory));
 
             while (true)
             {

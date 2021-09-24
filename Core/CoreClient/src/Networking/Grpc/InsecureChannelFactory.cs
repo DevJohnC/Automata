@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Net.Http;
 using Grpc.Core;
 using Grpc.Net.Client;
 
@@ -6,7 +7,11 @@ namespace Automata.Client.Networking.Grpc
 {
     public class InsecureChannelFactory : IGrpcChannelFactory
     {
-        private static readonly HttpClient DefaultHttpClient = new();
+        private static readonly HttpClient DefaultHttpClient = new()
+        {
+            DefaultRequestVersion = new Version(2,0),
+            DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
+        };
         
         public static readonly SharedChannelFactory SharedInstance =
             new (new InsecureChannelFactory());

@@ -31,6 +31,8 @@ namespace Automata.HostServer
             
             ServicesConfiguring(services);
 
+            services.TryAddSingleton<Discoverability.SsdpRootDeviceAccessor>();
+            services.AddHostedService<Discoverability.SsdpBackgroundService>();
             services.TryAddTransient(typeof(IDbContextFactory<>), typeof(Data.EntityFramework.DefaultDbContextFactory<>));
             services.TryAddTransient<Resources.IResourceIdPersistence, Resources.EntityFrameworkResourceIdPersistence>();
 

@@ -21,26 +21,22 @@ namespace LightsConsole
             var grpcChannelFactory = new SharedChannelFactory(InsecureChannelFactory.SharedInstance);
             
             var network = new AutomataNetwork();
-            var server = new GrpcAutomataServer(
-                "http://localhost:5000",
-                grpcNetworkServices,
-                grpcChannelFactory);
-            
-            var attemptCount = 0;
-            while (attemptCount < 5 &&
-                   network.Servers.Count == 0)
+
+            await using var networkWatcher = new SsdpNetworkWatcher();
+
+            networkWatcher.ServerAvailable += async (endpoint) =>
             {
-                attemptCount++;
-                try
-                {
-                    await network.AddServer(server, default);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                    await Task.Delay(TimeSpan.FromSeconds(5));
-                }
-            }
+                Console.WriteLine("Discovered server at: {0}", endpoint);
+                var server = new GrpcAutomataServer(
+                    endpoint,
+                    grpcNetworkServices,
+                    grpcChannelFactory);
+                await network.AddServer(server, default);
+            };
+            
+            await networkWatcher.Start(default);
+
+            await Task.Delay(-1);
 
             if (network.Servers.Count == 0)
                 throw new Exception("Couldn't connect to server.");

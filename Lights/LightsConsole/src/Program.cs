@@ -7,6 +7,7 @@ using Automata.Client;
 using Automata.Client.Networking.Grpc;
 using Automata.Client.Services;
 using Automata.Devices;
+using Automata.Kinds;
 using LightsClient;
 using LightsShared;
 
@@ -23,10 +24,25 @@ namespace LightsConsole
             
             var network = new AutomataNetwork();
 
-            await using var networkWatcher = new SsdpNetworkWatcher();
+            await using var serverSearcher = new SsdpServerDiscoverer();
+            await using var networkWatcher = new NetworkWatcher(network, serverSearcher);
             
             var syncLock = new object();
             var lights = new List<TrackingDeviceHandle<LightSwitch, LightSwitchState>>();
+
+            networkWatcher.ServerAvailable += async (sender, eventArgs, token) =>
+            {
+                await network.AddServer(new GrpcAutomataServer(
+                    eventArgs.ServerUri,
+                    grpcNetworkServices,
+                    grpcChannelFactory), token);
+            };
+
+            networkWatcher.ResourceAvailable += async (sender, eventArgs, token) =>
+            {
+                //var lightKind = KindModel.GetKind(typeof(LightSwitch));
+                //if (lightKind. eventArgs.SerializedResourceDocument)
+            };
 
             network.ServerAdded += async (_, server, ct) =>
             {
@@ -39,11 +55,10 @@ namespace LightsConsole
                 }
                 Render();
             };
+
+            await networkWatcher.StartAsync(default);
             
             Render();
-
-            await network.AddNetworkWatcher(networkWatcher, endpoint =>
-                new GrpcAutomataServer(endpoint, grpcNetworkServices, grpcChannelFactory));
 
             while (true)
             {

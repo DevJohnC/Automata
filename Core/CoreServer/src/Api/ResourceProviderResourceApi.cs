@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Automata.HostServer.Infrastructure;
 using Automata.Kinds;
 
@@ -16,20 +17,25 @@ namespace Automata.HostServer.Api
             _resourceProviders = resourceProviders.ToList();
         }
 
-        public async IAsyncEnumerable<SerializedResourceDocument> GetResources(
-            KindUri kindUri,
-            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public IAsyncEnumerable<SerializedResourceDocument> GetResources(KindUri kindUri)
         {
-            foreach (var provider in _resourceProviders)
+            return Impl();
+
+            async IAsyncEnumerable<SerializedResourceDocument> Impl(
+                [EnumeratorCancellation] CancellationToken cancellationToken = default)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                await foreach (var resource in provider.GetResources(cancellationToken))
+                foreach (var provider in _resourceProviders)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    var recordData = resource.Record;
-                    if (!recordData.IsOfKind(kindUri)) continue;
+                    await foreach (var resource in provider.GetResources()
+                        .WithCancellation(cancellationToken))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var recordData = resource.Record;
+                        if (!recordData.IsOfKind(kindUri)) continue;
 
-                    yield return resource.Serialize();
+                        yield return resource.Serialize();
+                    }
                 }
             }
         }

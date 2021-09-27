@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using Microsoft.AspNetCore.Builder;
 using Automata;
 using Automata.HostServer.GrpcServices;
 using Automata.HostServer.Infrastructure;
@@ -24,13 +25,18 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
         
-        public static IServiceCollection TryAddGrpcService<TService>(this IServiceCollection services)
-            where TService : class
+        public static IServiceCollection TryAddGrpcService<TBaseService, TImplementation>(this IServiceCollection services)
+            where TBaseService : class
+            where TImplementation : class, TBaseService
         {
-            if (services.Any(q => q.ImplementationType == typeof(GrpcServiceMapper<TService>)))
+            if (services.Any(q => q.ServiceType == typeof(GrpcServiceMapper<TBaseService>)))
                 return services;
-            
-            services.AddTransient<GrpcServiceMapper, GrpcServiceMapper<TService>>();
+
+            services.AddTransient<GrpcServiceMapper>(sp =>
+                sp.GetRequiredService<GrpcServiceMapper<TBaseService>>());
+            services.AddTransient<GrpcServiceMapper<TBaseService>, GrpcServiceMapper<TBaseService>>(
+                sp => new GrpcServiceMapper<TBaseService>(
+                    endpoints => endpoints.MapGrpcService<TImplementation>()));
             return services;
         }
     }

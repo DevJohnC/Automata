@@ -1,4 +1,5 @@
 ﻿using Automata.Events;
+using Automata.Events.GrpcServices;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -10,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddKind<EventRecord>();
             services.TryAddSingleton<IEventBroadcaster, EventBroadcaster>();
             services.TryAddSingleton<IObserverManager, ObserverManager>();
-            services.TryAddGrpcService<Automata.Events.GrpcServices.EventsServiceImpl>();
+            services.TryAddGrpcService<EventsService.EventsServiceBase, EventsServiceImpl>();
             return services;
         }
     }

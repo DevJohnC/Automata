@@ -12,7 +12,6 @@ namespace Automata.GrpcServices
                 Guid.Parse(ResourceId),
                 KindUri.NativeKindUri,
                 JObject.Parse(RecordData.EncodedBlob));
-            return default;
         }
         
         public static ResourceRecord FromNative(SerializedResourceDocument serializedResourceDocument)

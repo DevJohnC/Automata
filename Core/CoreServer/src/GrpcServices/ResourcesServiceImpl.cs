@@ -16,7 +16,8 @@ namespace Automata.HostServer.GrpcServices
 
         public override async Task GetResources(KindUri request, IServerStreamWriter<ResourceRecord> responseStream, ServerCallContext context)
         {
-            await foreach (var resource in _resourceApi.GetResources(request.NativeKindUri, context.CancellationToken))
+            await foreach (var resource in _resourceApi.GetResources(request.NativeKindUri)
+                .WithCancellation(context.CancellationToken))
             {
                 await responseStream.WriteAsync(
                     ResourceRecord.FromNative(resource));

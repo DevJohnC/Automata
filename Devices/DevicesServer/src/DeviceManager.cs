@@ -29,7 +29,7 @@ namespace Automata.Devices
             _resourceIdPersistence = resourceIdPersistence;
         }
         
-        async IAsyncEnumerable<ResourceDocument> IResourceProvider.GetResources(CancellationToken cancellationToken = default)
+        async IAsyncEnumerable<ResourceDocument> IResourceProvider.GetResources()
         {
             using var readLock = _lock.UseReadLock();
             foreach (var kvp in _devices)
@@ -78,6 +78,12 @@ namespace Automata.Devices
             where TDevice : Record
         {
             return _resourceIdPersistence.GetOrCreateResourceIdAsync(device);
+        }
+
+        private Task<Guid> GetStateId(Guid deviceId, KindName stateKindName)
+        {
+            var stateRecord = new StateRecord(deviceId, stateKindName);
+            return _resourceIdPersistence.GetOrCreateResourceIdAsync(stateRecord);
         }
 
         private async Task<(Guid DeviceId, Guid StateId)> GetResourceIds<TDevice>(
@@ -144,6 +150,29 @@ namespace Automata.Devices
                 new ResourceDocument<TState>(stateId, state),
                 owner);
             _devices.Add(deviceId, record);
+
+            if (owner != null)
+            {
+                AddOwnedDevice(owner, record);
+            }
+            //await _events.BroadcastEvent(new Events.DeviceAddedEvent());
+        }
+        
+        public async Task AddDevice<TDevice, TState>(
+            ResourceDocument<TDevice> device,
+            TState state,
+            object? owner = null)
+            where TDevice : DeviceDefinition
+            where TState : DeviceState
+        {
+            using var writeLock = _lock.UseWriteLock();
+
+            var stateId = await GetStateId(device.ResourceId, state.GetKind().Name);
+            var record = new DeviceRecord<TDevice, TState>(
+                device,
+                new ResourceDocument<TState>(stateId, state),
+                owner);
+            _devices.Add(device.ResourceId, record);
 
             if (owner != null)
             {

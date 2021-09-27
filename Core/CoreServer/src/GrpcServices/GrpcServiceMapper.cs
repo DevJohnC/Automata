@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using System;
 using Microsoft.AspNetCore.Routing;
 
 namespace Automata.HostServer.GrpcServices
@@ -11,9 +11,16 @@ namespace Automata.HostServer.GrpcServices
     internal class GrpcServiceMapper<TService> : GrpcServiceMapper
         where TService : class
     {
+        private readonly Action<IEndpointRouteBuilder> _mapServiceDelegate;
+
+        public GrpcServiceMapper(Action<IEndpointRouteBuilder> mapServiceDelegate)
+        {
+            _mapServiceDelegate = mapServiceDelegate;
+        }
+
         public override void MapService(IEndpointRouteBuilder endpoints)
         {
-            endpoints.MapGrpcService<TService>();
+            _mapServiceDelegate(endpoints);
         }
     }
 }

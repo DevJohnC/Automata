@@ -41,38 +41,6 @@ namespace Automata.Client
                 ChannelFactory.CreateChannel(server)));
         }
 
-        /*public IAsyncEnumerable<SerializedResourceDocument> GetResources(KindName? kindName = null)
-        {
-            return Impl(default);
-            
-            async IAsyncEnumerable<SerializedResourceDocument> Impl(
-                [EnumeratorCancellation] CancellationToken cancellationToken)
-            {
-                await using var client = _serviceFactory.CreateClient(this);
-                await foreach (var resource in client.GetResources(kindName ?? KindModel.GetKind(typeof(Record)).Name,
-                    cancellationToken))
-                {
-                    yield return resource;
-                }
-            }
-        }
-        
-        public IAsyncEnumerable<ResourceDocument<T>> GetResources<T>()
-            where T : Record
-        {
-            return Impl(default);
-            
-            async IAsyncEnumerable<ResourceDocument<T>> Impl(
-                [EnumeratorCancellation] CancellationToken cancellationToken)
-            {
-                await using var client = _serviceFactory.CreateClient(this);
-                await foreach (var resource in client.GetResources<T>(cancellationToken))
-                {
-                    yield return resource;
-                }
-            }
-        }*/
-
         [MemberNotNull(nameof(KindGraph))]
         public async Task RefreshKindGraph(CancellationToken cancellationToken = default)
         {

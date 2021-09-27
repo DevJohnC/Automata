@@ -2,12 +2,10 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Automata;
 using Automata.Client;
 using Automata.Client.Networking.Grpc;
 using Automata.Client.Services;
 using Automata.Devices;
-using Automata.Kinds;
 using LightsClient;
 using LightsShared;
 
@@ -24,7 +22,7 @@ namespace LightsConsole
             
             var network = new AutomataNetwork();
 
-            await using var serverSearcher = new SsdpServerDiscoverer();
+            await using var serverSearcher = new SsdpServerLocator();
             await using var networkWatcher = new NetworkWatcher(network, serverSearcher);
             
             var syncLock = new object();
@@ -46,6 +44,9 @@ namespace LightsConsole
 
             network.ServerAdded += async (_, server, ct) =>
             {
+                if (!server.SupportsDevices())
+                    return;
+                
                 await foreach (var light in server.GetLights()
                     .WithCancellation(ct))
                 {

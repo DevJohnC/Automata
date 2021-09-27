@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <RootNamespace>Automata.Computers</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\..\Core\CoreCommon\src\CoreCommon.csproj" />
+      <ProjectReference Include="..\..\..\Devices\DevicesCommon\src\DevicesCommon.csproj" />
+    </ItemGroup>
+</Project>

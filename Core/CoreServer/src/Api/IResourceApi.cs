@@ -6,7 +6,6 @@ namespace Automata.HostServer.Api
 {
     public interface IResourceApi
     {
-        IAsyncEnumerable<SerializedResourceDocument> GetResources(KindUri kindUri,
-            CancellationToken cancellationToken = default);
+        IAsyncEnumerable<SerializedResourceDocument> GetResources(KindUri kindUri);
     }
 }

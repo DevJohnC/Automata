@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using Automata.Devices;
+using Automata.Devices.GrpcServices;
 using Automata.HostServer.Infrastructure;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -26,7 +27,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 services.AddSingleton<DeviceControllerManager>();
                 services.AddSingleton<IResourceProvider>(sp => sp.GetRequiredService<DeviceControllerManager>());
                 
-                services.TryAddGrpcService<Automata.Devices.GrpcServices.DevicesServiceImpl>();
+                services.TryAddGrpcService<DeviceServices.DeviceServicesBase, DevicesServiceImpl>();
             }
 
             return services;

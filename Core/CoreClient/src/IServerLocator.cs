@@ -4,10 +4,10 @@ using System.Threading.Tasks;
 
 namespace Automata.Client
 {
-    public interface IServerDiscoverer : IAsyncDisposable
+    public interface IServerLocator : IAsyncDisposable
     {
-        event AsyncEventHandler<IServerDiscoverer, Uri>? ServerAvailable;
-        event AsyncEventHandler<IServerDiscoverer, Uri>? ServerUnavailable;
+        event AsyncEventHandler<IServerLocator, Uri>? ServerAvailable;
+        event AsyncEventHandler<IServerLocator, Uri>? ServerUnavailable;
 
         Task StartAsync(CancellationToken cancellationToken);
 

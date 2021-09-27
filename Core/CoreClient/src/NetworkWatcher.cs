@@ -8,9 +8,11 @@ namespace Automata.Client
 {
     //  todo: need server added and server removed events
     //  todo: when a server goes off network any hosted resources should get unavailable events raised
+    //  todo: filter resource kinds to watch
+    //  todo: maybe an observer pattern to watch resources with a generic type parameter
     public class NetworkWatcher : BackgroundService, IAsyncDisposable
     {
-        private readonly IServerDiscoverer[] _serverDiscoverers;
+        private readonly IServerLocator[] _serverDiscoverers;
 
         public record ServerEventArgs(Uri ServerUri);
 
@@ -29,31 +31,31 @@ namespace Automata.Client
         public AutomataNetwork Network { get; }
 
         public NetworkWatcher(AutomataNetwork network,
-            params IServerDiscoverer[] serverDiscoverers)
+            params IServerLocator[] serverDiscoverers)
         {
             _serverDiscoverers = serverDiscoverers;
             Network = network;
         }
 
-        private void HookServerDiscoveryEvents(IServerDiscoverer serverDiscoverer)
+        private void HookServerDiscoveryEvents(IServerLocator serverLocator)
         {
-            serverDiscoverer.ServerAvailable += ServerDiscovererOnServerAvailable;
-            serverDiscoverer.ServerUnavailable += ServerDiscovererOnServerUnavailable;
+            serverLocator.ServerAvailable += ServerDiscovererOnServerAvailable;
+            serverLocator.ServerUnavailable += ServerDiscovererOnServerUnavailable;
         }
 
-        private void UnhookServerDiscoveryEvents(IServerDiscoverer serverDiscoverer)
+        private void UnhookServerDiscoveryEvents(IServerLocator serverLocator)
         {
-            serverDiscoverer.ServerAvailable -= ServerDiscovererOnServerAvailable;
-            serverDiscoverer.ServerUnavailable -= ServerDiscovererOnServerUnavailable;
+            serverLocator.ServerAvailable -= ServerDiscovererOnServerAvailable;
+            serverLocator.ServerUnavailable -= ServerDiscovererOnServerUnavailable;
         }
         
-        private Task ServerDiscovererOnServerAvailable(IServerDiscoverer sender, Uri endpoint, CancellationToken ct)
+        private Task ServerDiscovererOnServerAvailable(IServerLocator sender, Uri endpoint, CancellationToken ct)
         {
             return ServerAvailable?.SerialInvoke(this, new(endpoint), ct) ??
                    Task.CompletedTask;
         }
         
-        private Task ServerDiscovererOnServerUnavailable(IServerDiscoverer sender, Uri endpoint, CancellationToken ct)
+        private Task ServerDiscovererOnServerUnavailable(IServerLocator sender, Uri endpoint, CancellationToken ct)
         {
             return ServerUnavailable?.SerialInvoke(this, new(endpoint), ct) ??
                    Task.CompletedTask;

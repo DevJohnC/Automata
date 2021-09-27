@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Automata.HostServer.Infrastructure;
@@ -71,16 +72,24 @@ namespace Automata.Devices
                 serializedResourceDocument);
         }
         
-        async IAsyncEnumerable<ResourceDocument> IResourceProvider.GetResources(CancellationToken cancellationToken = default)
+        IAsyncEnumerable<ResourceDocument> IResourceProvider.GetResources()
         {
-            await EnsureMetadataLoaded();
-            foreach (var deviceController in _controllerMetadata)
+            return Impl();
+            
+            async IAsyncEnumerable<ResourceDocument> Impl(
+                [EnumeratorCancellation] CancellationToken ct = default)
             {
-                yield return await deviceController.GetResourceDocument(_deviceManager);
-
-                foreach (var messageInvoker in deviceController.MessageInvokers)
+                await EnsureMetadataLoaded();
+                foreach (var deviceController in _controllerMetadata)
                 {
-                    yield return messageInvoker.RequestKind.AsResource();
+                    ct.ThrowIfCancellationRequested();
+                    yield return await deviceController.GetResourceDocument(_deviceManager);
+
+                    foreach (var messageInvoker in deviceController.MessageInvokers)
+                    {
+                        ct.ThrowIfCancellationRequested();
+                        yield return messageInvoker.RequestKind.AsResource();
+                    }
                 }
             }
         }

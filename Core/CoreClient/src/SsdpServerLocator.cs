@@ -10,12 +10,12 @@ using Rssdp;
 
 namespace Automata.Client
 {
-    public class SsdpServerDiscoverer : BackgroundService, IServerDiscoverer
+    public class SsdpServerLocator : BackgroundService, IServerLocator
     {
         private const string AutomataServerUrn = "urn:automata:device:HostServer:1";
 
-        public event AsyncEventHandler<IServerDiscoverer, Uri>? ServerAvailable;
-        public event AsyncEventHandler<IServerDiscoverer, Uri>? ServerUnavailable;
+        public event AsyncEventHandler<IServerLocator, Uri>? ServerAvailable;
+        public event AsyncEventHandler<IServerLocator, Uri>? ServerUnavailable;
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {

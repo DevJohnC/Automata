@@ -19,19 +19,24 @@ namespace Automata.HostServer.Kinds
                 .ToList();
         }
 
-        public async IAsyncEnumerable<ResourceDocument> GetResources(
-            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public IAsyncEnumerable<ResourceDocument> GetResources()
         {
-            //  base kind
-            yield return KindModel.GetKind(typeof(Record)).AsResource();
+            return Impl();
             
-            //  kind
-            yield return KindModel.GetKind(typeof(KindRecord)).AsResource();
-
-            foreach (var kind in _installedKinds)
+            async IAsyncEnumerable<ResourceDocument> Impl(
+                [EnumeratorCancellation] CancellationToken cancellationToken = default)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                yield return kind.AsResource();
+                //  base kind
+                yield return KindModel.GetKind(typeof(Record)).AsResource();
+
+                //  kind
+                yield return KindModel.GetKind(typeof(KindRecord)).AsResource();
+
+                foreach (var kind in _installedKinds)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    yield return kind.AsResource();
+                }
             }
         }
     }

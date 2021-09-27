@@ -5,6 +5,6 @@ namespace Automata.HostServer.Infrastructure
 {
     public interface IResourceProvider
     {
-        IAsyncEnumerable<ResourceDocument> GetResources(CancellationToken cancellationToken = default);
+        IAsyncEnumerable<ResourceDocument> GetResources();
     }
 }

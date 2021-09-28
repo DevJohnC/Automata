@@ -48,6 +48,11 @@ namespace Automata.Computers.Agent
                 );
         }
 
+        public async IAsyncEnumerable<ResourceDocument> GetAssociatedResources(ResourceIdentifier resourceIdentifier)
+        {
+            yield break;
+        }
+
         private ComputerManifest GetLocalSystemManifest()
         {
             return new ComputerManifest(

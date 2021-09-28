@@ -10,7 +10,7 @@ namespace Automata.Client
     //  todo: when a server goes off network any hosted resources should get unavailable events raised
     //  todo: filter resource kinds to watch
     //  todo: maybe an observer pattern to watch resources with a generic type parameter
-    public class NetworkWatcher : BackgroundService, IAsyncDisposable
+    public class NetworkResourceWatcher : BackgroundService, IResourceWatcher, IAsyncDisposable
     {
         private readonly IServerLocator[] _serverDiscoverers;
 
@@ -18,19 +18,19 @@ namespace Automata.Client
 
         private readonly List<ServerWatcher> _serverWatchers = new();
 
-        public event AsyncEventHandler<NetworkWatcher, ServerEventArgs>? ServerAvailable;
+        public event AsyncEventHandler<NetworkResourceWatcher, ServerEventArgs>? ServerAvailable;
 
-        public event AsyncEventHandler<NetworkWatcher, ServerEventArgs>? ServerUnavailable;
+        public event AsyncEventHandler<NetworkResourceWatcher, ServerEventArgs>? ServerUnavailable;
         
-        public event AsyncEventHandler<NetworkWatcher, ServerResourceEventArgs>? ResourceAvailable;
+        public event AsyncEventHandler<NetworkResourceWatcher, ServerResourceEventArgs>? ResourceAvailable;
         
-        public event AsyncEventHandler<NetworkWatcher, ServerResourceEventArgs>? ResourceChanged;
+        public event AsyncEventHandler<NetworkResourceWatcher, ServerResourceEventArgs>? ResourceChanged;
         
-        public event AsyncEventHandler<NetworkWatcher, ServerResourceEventArgs>? ResourceUnavailable;
+        public event AsyncEventHandler<NetworkResourceWatcher, ServerResourceEventArgs>? ResourceUnavailable;
 
         public AutomataNetwork Network { get; }
 
-        public NetworkWatcher(AutomataNetwork network,
+        public NetworkResourceWatcher(AutomataNetwork network,
             params IServerLocator[] serverDiscoverers)
         {
             _serverDiscoverers = serverDiscoverers;

@@ -22,11 +22,10 @@ namespace LightsConsole
             
             var network = new AutomataNetwork();
 
-            await using var serverSearcher = new SsdpServerLocator();
-            await using var networkWatcher = new NetworkWatcher(network, serverSearcher);
+            await using var ssdpServerLocator = new SsdpServerLocator();
+            await using var networkWatcher = new NetworkResourceWatcher(network, ssdpServerLocator);
             
             var syncLock = new object();
-            var lights = new List<TrackingDeviceHandle<LightSwitch, LightSwitchState>>();
 
             networkWatcher.ServerAvailable += async (sender, eventArgs, token) =>
             {
@@ -36,26 +35,8 @@ namespace LightsConsole
                     grpcChannelFactory), token);
             };
 
-            networkWatcher.ResourceAvailable += async (sender, eventArgs, token) =>
-            {
-                //var lightKind = KindModel.GetKind(typeof(LightSwitch));
-                //if (lightKind. eventArgs.SerializedResourceDocument)
-            };
-
-            network.ServerAdded += async (_, server, ct) =>
-            {
-                if (!server.SupportsDevices())
-                    return;
-                
-                await foreach (var light in server.GetLights()
-                    .WithCancellation(ct))
-                {
-                    var trackingHandler = await light.GetTrackingHandle(ct);
-                    trackingHandler.StateChanged += StateChanged;
-                    lights.Add(trackingHandler);
-                }
-                Render();
-            };
+            var lightsWatcher = new DevicesWatcher<LightSwitch>(networkWatcher);
+            lightsWatcher.Changed += StateChanged;
 
             await networkWatcher.StartAsync(default);
             
@@ -70,17 +51,15 @@ namespace LightsConsole
                     await ChangeStates();
             }
 
-            foreach (var light in lights)
-            {
-                await light.DisposeAsync();
-            }
-
             async Task ChangeStates()
             {
                 var tasks = new List<Task>();
-                foreach (var light in lights)
+                foreach (var light in lightsWatcher.Devices)
                 {
-                    if (light.GetStateSnapshot().Record.PowerState == LightSwitchPowerState.Off)
+                    if (!light.TryGetState<LightSwitchState>(out var state))
+                        continue;
+                    
+                    if (state.PowerState == LightSwitchPowerState.Off)
                         tasks.Add(network.TurnOn(light));
                     else
                         tasks.Add(network.TurnOff(light));
@@ -89,31 +68,36 @@ namespace LightsConsole
                 await Task.WhenAll(tasks);
             }
 
-            Task StateChanged(TrackingDeviceHandle sender, EventArgs eventArgs,
-                CancellationToken cancellationToken)
+            Task StateChanged(DevicesWatcher<LightSwitch> sender, CancellationToken cancellationToken)
             {
                 Render();
                 return Task.CompletedTask;
             }
 
-            void Render()
+            async void Render()
             {
-                lock (syncLock)
+                //lock (syncLock)
+                while (true)
                 {
                     Console.Clear();
                     Console.WriteLine("Lights");
-                    foreach (var light in lights)
+                    //foreach (var light in lightsWatcher.Devices)
+                    await foreach (var light in network.GetLights())
                     {
-                        var state = light.GetStateSnapshot().Record;
+                        if (!light.TryGetState<LightSwitchState>(out var state))
+                            continue;
+                        
                         Console.WriteLine(
                             "  {0}: Is {1} at power level {2}",
-                            light.Device.NetworkId,
+                            light.Definition.NetworkId,
                             (state.PowerState == LightSwitchPowerState.On) ? "ON " : "OFF",
                             state.PowerLevel);
                     }
                     Console.WriteLine();
                     
                     Console.WriteLine("Press [ENTER] to change state, [ESC] to exit");
+
+                    await Task.Delay(TimeSpan.FromSeconds(1));
                 }
             }
         }

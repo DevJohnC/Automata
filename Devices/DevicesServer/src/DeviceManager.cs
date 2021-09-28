@@ -18,7 +18,7 @@ namespace Automata.Devices
         private readonly IEventBroadcaster _events;
         private readonly IResourceIdPersistence _resourceIdPersistence;
 
-        private readonly ReaderWriterLockSlim _lock = new();
+        private readonly ReaderWriterLockSlim _lock = new(LockRecursionPolicy.SupportsRecursion);
         private readonly Dictionary<Guid, DeviceRecord> _devices = new();
         private readonly ConditionalWeakTable<object, Dictionary<Guid, DeviceRecord>> _ownedDevices = new();
 
@@ -36,6 +36,16 @@ namespace Automata.Devices
             {
                 yield return kvp.Value.Device;
                 yield return kvp.Value.State;
+            }
+        }
+
+        async IAsyncEnumerable<ResourceDocument> IResourceProvider.GetAssociatedResources(
+            ResourceIdentifier resourceIdentifier)
+        {
+            using var readLock = _lock.UseReadLock();
+            if (_devices.TryGetValue(resourceIdentifier.ResourceId, out var deviceRecord))
+            {
+                yield return deviceRecord.State;
             }
         }
 

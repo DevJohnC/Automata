@@ -33,7 +33,7 @@ namespace Automata.Computers.Server
         
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            await using var networkWatcher = new NetworkWatcher(_network, _serverDiscoverers);
+            await using var networkWatcher = new NetworkResourceWatcher(_network, _serverDiscoverers);
             networkWatcher.ServerAvailable += NetworkWatcherOnServerAvailable;
             networkWatcher.ResourceAvailable += NetworkWatcherOnResourceAvailable;
 
@@ -49,7 +49,7 @@ namespace Automata.Computers.Server
             }
         }
 
-        private async Task NetworkWatcherOnResourceAvailable(NetworkWatcher sender,
+        private async Task NetworkWatcherOnResourceAvailable(NetworkResourceWatcher sender,
             ServerResourceEventArgs e,
             CancellationToken cancellationToken)
         {
@@ -71,8 +71,8 @@ namespace Automata.Computers.Server
             }
         }
 
-        private async Task NetworkWatcherOnServerAvailable(NetworkWatcher sender,
-            NetworkWatcher.ServerEventArgs e,
+        private async Task NetworkWatcherOnServerAvailable(NetworkResourceWatcher sender,
+            NetworkResourceWatcher.ServerEventArgs e,
             CancellationToken cancellationToken)
         {
             await sender.Network.AddServer(

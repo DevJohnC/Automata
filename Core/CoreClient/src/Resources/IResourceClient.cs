@@ -5,8 +5,14 @@ using Automata.Kinds;
 
 namespace Automata.Client.Resources
 {
+    public record SerializedResourceGraph(
+        SerializedResourceDocument Resource,
+        IReadOnlyList<SerializedResourceDocument> AssociatedResources);
+    
     public interface IResourceClient : IAutomataNetworkService, IAsyncDisposable
     {
-        IAsyncEnumerable<SerializedResourceDocument> GetResources(KindName resourceKind);
+        IAsyncEnumerable<SerializedResourceGraph> GetResources(
+            KindName resourceKind,
+            IReadOnlyCollection<KindName>? associatedKinds = null);
     }
 }

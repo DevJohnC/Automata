@@ -4,6 +4,11 @@ using System.Threading.Tasks;
 
 namespace Automata
 {
+    public delegate Task AsyncEventHandler<TSender>(
+        TSender sender,
+        CancellationToken cancellationToken)
+        where TSender : notnull;
+    
     public delegate Task AsyncEventHandler<TSender, TEventArgs>(
         TSender sender,
         TEventArgs e,

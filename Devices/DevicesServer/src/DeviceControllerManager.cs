@@ -93,5 +93,10 @@ namespace Automata.Devices
                 }
             }
         }
+
+        public async IAsyncEnumerable<ResourceDocument> GetAssociatedResources(ResourceIdentifier resourceIdentifier)
+        {
+            yield break;
+        }
     }
 }

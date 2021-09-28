@@ -11,7 +11,7 @@ namespace Automata.Client
         IAutomataServer Server,
         SerializedResourceDocument SerializedResourceDocument);
     
-    public class ServerWatcher : BackgroundService, IAsyncDisposable
+    public class ServerWatcher : BackgroundService, IResourceWatcher, IAsyncDisposable
     {
         public event AsyncEventHandler<ServerWatcher, ServerResourceEventArgs>? ResourceAvailable;
         
@@ -30,12 +30,13 @@ namespace Automata.Client
         {
             var resourceBaseKind = KindModel.GetKind(typeof(Record));
             var resourcesClient = Server.CreateService<IResourceClient>();
-            await foreach (var resource in resourcesClient.GetResources(resourceBaseKind.Name)
+            await foreach (var resource in resourcesClient
+                .GetResources(resourceBaseKind.Name)
                 .WithCancellation(stoppingToken))
             {
                 await (ResourceAvailable?.SerialInvoke(
                            this,
-                           new(Server, resource),
+                           new(Server, resource.Resource),
                            stoppingToken)
                     ?? Task.CompletedTask);
             }

@@ -39,5 +39,10 @@ namespace Automata.HostServer.Kinds
                 }
             }
         }
+
+        public async IAsyncEnumerable<ResourceDocument> GetAssociatedResources(ResourceIdentifier resourceIdentifier)
+        {
+            yield break;
+        }
     }
 }

@@ -7,16 +7,16 @@ namespace LightsClient
 {
     public static class NetworkExtensions
     {
-        public static IAsyncEnumerable<DeviceHandle<LightSwitch, LightSwitchState>> GetLights(
+        public static IAsyncEnumerable<Device<LightSwitch>> GetLights(
             this AutomataNetwork network)
         {
-            return network.GetDevices<LightSwitch, LightSwitchState>();
+            return network.GetDevices<LightSwitch>();
         }
 
-        public static IAsyncEnumerable<DeviceHandle<LightSwitch, LightSwitchState>> GetLights(
+        public static IAsyncEnumerable<Device<LightSwitch>> GetLights(
             this IAutomataServer server)
         {
-            return server.GetDevices<LightSwitch, LightSwitchState>();
+            return server.GetDevices<LightSwitch>();
         }
     }
 }

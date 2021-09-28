@@ -22,7 +22,7 @@ namespace Automata.Client.Resources
                 await foreach (var resource in client.GetResources(kind.Name)
                     .WithCancellation(cancellationToken))
                 {
-                    yield return resource.Deserialize<T>();
+                    yield return resource.Resource.Deserialize<T>();
                 }
             }
         }

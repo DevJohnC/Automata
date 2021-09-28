@@ -39,5 +39,32 @@ namespace Automata.HostServer.Api
                 }
             }
         }
+
+        public IAsyncEnumerable<SerializedResourceDocument> GetAssociatedResource(
+            ResourceIdentifier resourceIdentifier,
+            IReadOnlyCollection<KindUri> kindUris)
+        {
+            return Impl();
+
+            async IAsyncEnumerable<SerializedResourceDocument> Impl(
+                [EnumeratorCancellation] CancellationToken cancellationToken = default)
+            {
+                foreach (var provider in _resourceProviders)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    await foreach (var resource in provider
+                        .GetAssociatedResources(resourceIdentifier)
+                        .WithCancellation(cancellationToken))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var recordData = resource.Record;
+                        if (!kindUris.Any(q => recordData.IsOfKind(q)))
+                            continue;
+
+                        yield return resource.Serialize();
+                    }
+                }
+            }
+        }
     }
 }

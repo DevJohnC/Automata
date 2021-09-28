@@ -7,7 +7,17 @@ package automata.grpcServices;
 import "google/protobuf/empty.proto";
 
 service ResourcesService {
-  rpc GetResources(KindUri) returns (stream ResourceRecord);
+  rpc GetResources(ResourcesRequest) returns (stream ResourceGraph);
+}
+
+message ResourcesRequest {
+  KindUri Kind = 1;
+  repeated KindUri AssociatedKinds = 2;
+}
+
+message ResourceGraph {
+  ResourceRecord Resource = 1;
+  repeated ResourceRecord AssociatedRecords = 2;
 }
 
 message KindUri {

@@ -17,17 +17,10 @@ namespace LightsClient
         }
         
         public static Task TurnOn(this AutomataNetwork network,
-            DeviceHandle<LightSwitch, LightSwitchState> lightSwitch)
+            Device<LightSwitch> lightSwitch)
         {
             return network.TurnOn(
-                new ResourceDocument<LightSwitch>(lightSwitch.DeviceId, lightSwitch.Device));
-        }
-        
-        public static Task TurnOn(this AutomataNetwork network,
-            TrackingDeviceHandle<LightSwitch, LightSwitchState> lightSwitch)
-        {
-            return network.TurnOn(
-                new ResourceDocument<LightSwitch>(lightSwitch.DeviceId, lightSwitch.Device));
+                new ResourceDocument<LightSwitch>(lightSwitch.DeviceId, lightSwitch.Definition));
         }
         
         public static Task TurnOff(this AutomataNetwork network,
@@ -39,17 +32,10 @@ namespace LightsClient
         }
         
         public static Task TurnOff(this AutomataNetwork network,
-            DeviceHandle<LightSwitch, LightSwitchState> lightSwitch)
+            Device<LightSwitch> lightSwitch)
         {
             return network.TurnOff(
-                new ResourceDocument<LightSwitch>(lightSwitch.DeviceId, lightSwitch.Device));
-        }
-        
-        public static Task TurnOff(this AutomataNetwork network,
-            TrackingDeviceHandle<LightSwitch, LightSwitchState> lightSwitch)
-        {
-            return network.TurnOff(
-                new ResourceDocument<LightSwitch>(lightSwitch.DeviceId, lightSwitch.Device));
+                new ResourceDocument<LightSwitch>(lightSwitch.DeviceId, lightSwitch.Definition));
         }
         
         public static Task SetPowerLevel(this AutomataNetwork network,
@@ -62,20 +48,11 @@ namespace LightsClient
         }
         
         public static Task SetPowerLevel(this AutomataNetwork network,
-            DeviceHandle<LightSwitch, LightSwitchState> lightSwitch,
+            Device<LightSwitch> lightSwitch,
             double powerLevel)
         {
             return network.SetPowerLevel(
-                new ResourceDocument<LightSwitch>(lightSwitch.DeviceId, lightSwitch.Device),
-                powerLevel);
-        }
-        
-        public static Task SetPowerLevel(this AutomataNetwork network,
-            TrackingDeviceHandle<LightSwitch, LightSwitchState> lightSwitch,
-            double powerLevel)
-        {
-            return network.SetPowerLevel(
-                new ResourceDocument<LightSwitch>(lightSwitch.DeviceId, lightSwitch.Device),
+                new ResourceDocument<LightSwitch>(lightSwitch.DeviceId, lightSwitch.Definition),
                 powerLevel);
         }
     }

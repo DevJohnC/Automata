@@ -4,26 +4,28 @@ using System.Threading;
 using System.Threading.Tasks;
 using async_enumerable_dotnet;
 using Automata.Client;
+using Automata.Client.Resources;
 using Automata.Kinds;
 
 namespace Automata.Devices
 {
     public static class NetworkDeviceExtensions
     {
-        public static IAsyncEnumerable<DeviceHandle<TDevice, TState>> GetDevices<TDevice, TState>(
+        private static readonly KindModel StateKind = KindModel.GetKind(typeof(DeviceState));
+        
+        public static IAsyncEnumerable<Device<TDevice>> GetDevices<TDevice>(
             this AutomataNetwork network)
             where TDevice : notnull, DeviceDefinition
-            where TState : notnull, DeviceState
         {
             return Impl();
             
-            async IAsyncEnumerable<DeviceHandle<TDevice, TState>> Impl(
+            async IAsyncEnumerable<Device<TDevice>> Impl(
                 [EnumeratorCancellation] CancellationToken cancellationToken = default)
             {
-                List<IAsyncEnumerable<DeviceHandle<TDevice, TState>>> streams = new();
+                List<IAsyncEnumerable<Device<TDevice>>> streams = new();
                 foreach (var server in network.Servers)
                 {
-                    streams.Add(server.GetDevices<TDevice, TState>());
+                    streams.Add(server.GetDevices<TDevice>());
                 }
 
                 await foreach (var deviceHandle in AsyncEnumerable
@@ -35,35 +37,36 @@ namespace Automata.Devices
             }
         }
 
-        public static IAsyncEnumerable<DeviceHandle<TDevice, TState>> GetDevices<TDevice, TState>(
+        public static IAsyncEnumerable<Device<TDevice>> GetDevices<TDevice>(
             this IAutomataServer server)
             where TDevice : notnull, DeviceDefinition
-            where TState : notnull, DeviceState
         {
-            return server.CreateService<IDevicesClient>().GetDevices<TDevice, TState>();
+            return server.CreateService<IResourceClient>().GetDevices<TDevice>();
         }
         
-        public static IAsyncEnumerable<DeviceHandle<TDevice, TState>> GetDevices<TDevice, TState>(
-            this IDevicesClient devicesClient)
+        public static IAsyncEnumerable<Device<TDevice>> GetDevices<TDevice>(
+            this IResourceClient resourceClient)
             where TDevice : notnull, DeviceDefinition
-            where TState : notnull, DeviceState
         {
             var deviceKind = KindModel.GetKind(typeof(TDevice));
-            var stateKind = KindModel.GetKind(typeof(TState));
-            
+
             return Impl();
             
-            async IAsyncEnumerable<DeviceHandle<TDevice, TState>> Impl(
+            async IAsyncEnumerable<Device<TDevice>> Impl(
                 [EnumeratorCancellation] CancellationToken cancellationToken = default)
             {
-                await foreach (var pair in devicesClient
-                    .GetDeviceStatePairs(deviceKind.Name.PluralUri, stateKind.Name.PluralUri)
+                await foreach (var graph in resourceClient
+                    .GetResources(deviceKind.Name, new[]
+                    {
+                        StateKind.Name
+                    })
                     .WithCancellation(cancellationToken))
                 {
-                    yield return new DeviceHandle<TDevice, TState>(
-                        devicesClient.Server,
-                        pair.DeviceDefinition.Deserialize<TDevice>(),
-                        pair.DeviceState.Deserialize<TState>());
+                    var deviceRecord = graph.Resource.Deserialize<TDevice>();
+                    yield return new Device<TDevice>(
+                        deviceRecord.ResourceId,
+                        deviceRecord.Record,
+                        graph.AssociatedResources);
                 }
             }
         }

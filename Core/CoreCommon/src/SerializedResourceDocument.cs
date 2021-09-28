@@ -7,7 +7,8 @@ using Newtonsoft.Json.Serialization;
 
 namespace Automata
 {
-    public record SerializedResourceDocument(Guid ResourceId, SingularKindUri KindUri, JObject Record)
+    public record SerializedResourceDocument(Guid ResourceId, SingularKindUri KindUri, JObject Record) :
+        ResourceIdentifier(ResourceId, KindUri)
     {
         public ResourceDocument<T> Deserialize<T>()
             where T : notnull, Record
@@ -16,7 +17,8 @@ namespace Automata
         }
     }
 
-    public abstract record ResourceDocument(Guid ResourceId, SingularKindUri KindUri, Record Record)
+    public abstract record ResourceDocument(Guid ResourceId, SingularKindUri KindUri, Record Record) :
+        ResourceIdentifier(ResourceId, KindUri)
     {
         public abstract SerializedResourceDocument Serialize();
     }

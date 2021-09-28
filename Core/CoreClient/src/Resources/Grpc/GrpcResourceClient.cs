@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Automata.GrpcServices;
 using Automata.Kinds;
 using Grpc.Core;
 
@@ -25,25 +27,46 @@ namespace Automata.Client.Resources.Grpc
             return default;
         }
 
-        public IAsyncEnumerable<SerializedResourceDocument> GetResources(KindName resourceKind)
+        public IAsyncEnumerable<SerializedResourceGraph> GetResources(
+            KindName resourceKind,
+            IReadOnlyCollection<KindName>? associatedKinds = null)
         {
             return Impl();
             
-            async IAsyncEnumerable<SerializedResourceDocument> Impl(
+            async IAsyncEnumerable<SerializedResourceGraph> Impl(
                 [EnumeratorCancellation] CancellationToken cancellationToken = default
                 )
             {
-                var client = new GrpcServices.ResourcesService.ResourcesServiceClient(_channel);
-                using var resourceStream = client.GetResources(new()
+                var request = new ResourcesRequest
                 {
-                    PluralUri = GrpcServices.PluralKindUri
-                        .FromKindName(resourceKind)
-                }, cancellationToken: cancellationToken);
+                    Kind = new()
+                    {
+                        PluralUri = GrpcServices.PluralKindUri
+                            .FromKindName(resourceKind)
+                    }
+                };
+                if (associatedKinds?.Count > 0)
+                {
+                    foreach (var kindName in associatedKinds)
+                    {
+                        request.AssociatedKinds.Add(new GrpcServices.KindUri
+                        {
+                            PluralUri = GrpcServices.PluralKindUri.FromKindName(kindName) 
+                        });
+                    }
+                }
+                
+                var client = new ResourcesService.ResourcesServiceClient(_channel);
+                using var resourceStream = client.GetResources(request,
+                    cancellationToken: cancellationToken);
 
                 while (await resourceStream.ResponseStream.MoveNext())
                 {
                     var currentRecord = resourceStream.ResponseStream.Current;
-                    yield return currentRecord.ToNative();
+                    yield return new SerializedResourceGraph(
+                        currentRecord.Resource.ToNative(),
+                        currentRecord.AssociatedRecords.Select(
+                            q => q.ToNative()).ToList());
                 }
             }
         }

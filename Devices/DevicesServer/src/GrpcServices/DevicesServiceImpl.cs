@@ -18,25 +18,6 @@ namespace Automata.Devices.GrpcServices
             _deviceControllerManager = deviceControllerManager;
         }
 
-        public override async Task GetDeviceStatePairs(DeviceStatePairRequest request,
-            IServerStreamWriter<DeviceStatePair> responseStream, ServerCallContext context)
-        {
-            await foreach (var snapshot in _deviceManager.GetSnapshots(
-                request.DeviceKind.NativeKindUri, request.StateKind.NativeKindUri)
-                .WithCancellation(context.CancellationToken))
-            {
-                await responseStream.WriteAsync(new()
-                {
-                    DeviceState = ResourceRecord.FromNative(
-                        snapshot.State.Serialize()
-                        ),
-                    DeviceDefinition = ResourceRecord.FromNative(
-                        snapshot.Device.Serialize()
-                    )
-                });
-            }
-        }
-
         public override async Task<Empty> RequestStateChange(StateChangeRequest request, ServerCallContext context)
         {
             await _deviceControllerManager.RequestDeviceStateChange(

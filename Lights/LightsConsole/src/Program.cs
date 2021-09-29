@@ -74,15 +74,13 @@ namespace LightsConsole
                 return Task.CompletedTask;
             }
 
-            async void Render()
+            void Render()
             {
-                //lock (syncLock)
-                while (true)
+                lock (syncLock)
                 {
                     Console.Clear();
                     Console.WriteLine("Lights");
-                    //foreach (var light in lightsWatcher.Devices)
-                    await foreach (var light in network.GetLights())
+                    foreach (var light in lightsWatcher.Devices)
                     {
                         if (!light.TryGetState<LightSwitchState>(out var state))
                             continue;
@@ -96,8 +94,6 @@ namespace LightsConsole
                     Console.WriteLine();
                     
                     Console.WriteLine("Press [ENTER] to change state, [ESC] to exit");
-
-                    await Task.Delay(TimeSpan.FromSeconds(1));
                 }
             }
         }

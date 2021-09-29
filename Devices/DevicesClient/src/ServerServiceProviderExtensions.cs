@@ -10,7 +10,6 @@ namespace Automata.Devices
             this IServerServiceProvider<GrpcAutomataServer> serviceProvider)
         {
             serviceProvider.AddEvents();
-            serviceProvider.TryRegister(GrpcDevicesClient.Factory);
             serviceProvider.TryRegister(GrpcStateClient.Factory);
             return serviceProvider;
         }

@@ -24,7 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Protobuf Include="..\..\CoreCommon\src\*.proto" GrpcServices="Server" />
+        <Protobuf Include="..\..\CoreCommon\src\*.proto" AdditionalImportDirs="../../.." GrpcServices="Server" />
     </ItemGroup>
 
 </Project>

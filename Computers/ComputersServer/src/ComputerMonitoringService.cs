@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Automata.Client;
+using Automata.Client.Networking;
 using Automata.Client.Services;
 using Automata.Devices;
 using Automata.Kinds;

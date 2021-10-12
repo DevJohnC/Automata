@@ -15,7 +15,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\DevicesCommon\src\DevicesCommon.csproj" />
-      <ProjectReference Include="..\..\..\Events\EventsServer\src\EventsServer.csproj" />
       <ProjectReference Include="..\..\..\Core\CoreServer\src\CoreServer.csproj" />
     </ItemGroup>
 

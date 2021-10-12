@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Automata;
 using Automata.Client;
+using Automata.Client.Networking;
 using Automata.Devices;
 using LightsShared;
 

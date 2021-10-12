@@ -2,45 +2,52 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Automata.Client;
+using Automata.Client.Networking;
 using Automata.Client.Networking.Grpc;
 using Automata.Client.Services;
 using Automata.Devices;
-using LightsClient;
 using LightsShared;
 
 namespace LightsConsole
 {
     class Program
     {
+        class MyAdHocNetwork : AdHocNetwork
+        {
+            private readonly IGrpcChannelFactory _channelFactory =
+                new SharedChannelFactory(InsecureChannelFactory.SharedInstance);
+
+            private readonly ServerServiceProvider<GrpcAutomataServer> _networkServices;
+
+            public MyAdHocNetwork() :
+                base(new SsdpServerLocator())
+            {
+                _networkServices = new ServerServiceProvider<GrpcAutomataServer>();
+                _networkServices.AddDevices();
+            }
+            
+            protected override Task<IAutomataServer?> CreateServer(IServerLocator locator, Uri uri, CancellationToken ct)
+            {
+                return Task.FromResult<IAutomataServer?>(new GrpcAutomataServer(
+                    uri,
+                    _networkServices,
+                    _channelFactory));
+            }
+        }
+        
         static async Task Main(string[] args)
         {
-            var grpcNetworkServices = new ServerServiceProvider<GrpcAutomataServer>();
-            grpcNetworkServices.AddDevices();
+            using var network = new MyAdHocNetwork();
 
-            var grpcChannelFactory = new SharedChannelFactory(InsecureChannelFactory.SharedInstance);
-            
-            var network = new AutomataNetwork();
-
-            await using var ssdpServerLocator = new SsdpServerLocator();
-            await using var networkWatcher = new NetworkResourceWatcher(network, ssdpServerLocator);
-            
             var syncLock = new object();
-
-            networkWatcher.ServerAvailable += async (sender, eventArgs, token) =>
+            
+            using var lightsMonitor = new DeviceMonitor<LightSwitch>(network);
+            lightsMonitor.Changed += (_,_) =>
             {
-                await network.AddServer(new GrpcAutomataServer(
-                    eventArgs.ServerUri,
-                    grpcNetworkServices,
-                    grpcChannelFactory), token);
+                Render(syncLock, lightsMonitor.Devices);
             };
 
-            var lightsWatcher = new DevicesWatcher<LightSwitch>(networkWatcher);
-            lightsWatcher.Changed += StateChanged;
-
-            await networkWatcher.StartAsync(default);
-            
-            Render();
+            Render(syncLock, lightsMonitor.Devices);
 
             while (true)
             {
@@ -53,7 +60,7 @@ namespace LightsConsole
 
             async Task ChangeStates()
             {
-                var tasks = new List<Task>();
+                /*var tasks = new List<Task>();
                 foreach (var light in lightsWatcher.Devices)
                 {
                     if (!light.TryGetState<LightSwitchState>(out var state))
@@ -65,36 +72,30 @@ namespace LightsConsole
                         tasks.Add(network.TurnOff(light));
                 }
 
-                await Task.WhenAll(tasks);
+                await Task.WhenAll(tasks);*/
             }
-
-            Task StateChanged(DevicesWatcher<LightSwitch> sender, CancellationToken cancellationToken)
+        }
+        
+        static void Render(object syncLock, IEnumerable<Device<LightSwitch>> lights)
+        {
+            lock (syncLock)
             {
-                Render();
-                return Task.CompletedTask;
-            }
-
-            void Render()
-            {
-                lock (syncLock)
+                Console.Clear();
+                Console.WriteLine("Lights");
+                foreach (var light in lights)
                 {
-                    Console.Clear();
-                    Console.WriteLine("Lights");
-                    foreach (var light in lightsWatcher.Devices)
-                    {
-                        if (!light.TryGetState<LightSwitchState>(out var state))
-                            continue;
+                    if (!light.TryGetState<LightSwitchState>(out var state))
+                        continue;
                         
-                        Console.WriteLine(
-                            "  {0}: Is {1} at power level {2}",
-                            light.Definition.NetworkId,
-                            (state.PowerState == LightSwitchPowerState.On) ? "ON " : "OFF",
-                            state.PowerLevel);
-                    }
-                    Console.WriteLine();
-                    
-                    Console.WriteLine("Press [ENTER] to change state, [ESC] to exit");
+                    Console.WriteLine(
+                        "  {0}: Is {1} at power level {2}",
+                        light.Definition.NetworkId,
+                        (state.PowerState == LightSwitchPowerState.On) ? "ON " : "OFF",
+                        state.PowerLevel);
                 }
+                Console.WriteLine();
+                    
+                Console.WriteLine("Press [ENTER] to toggle state, [ESC] to exit");
             }
         }
     }

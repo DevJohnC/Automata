@@ -8,7 +8,7 @@ using Automata.Client.Resources.Grpc;
 using Automata.Client.Services;
 using Automata.Kinds;
 
-namespace Automata.Client
+namespace Automata.Client.Networking
 {
     public class GrpcAutomataServer : IAutomataServer
     {

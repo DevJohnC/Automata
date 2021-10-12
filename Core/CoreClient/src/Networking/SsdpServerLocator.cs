@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Rssdp;
 
-namespace Automata.Client
+namespace Automata.Client.Networking
 {
     public class SsdpServerLocator : BackgroundService, IServerLocator
     {

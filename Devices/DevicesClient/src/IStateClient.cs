@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Automata.Client;
+using Automata.Client.Services;
 
 namespace Automata.Devices
 {

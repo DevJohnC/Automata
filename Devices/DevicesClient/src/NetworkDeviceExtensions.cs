@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using async_enumerable_dotnet;
 using Automata.Client;
+using Automata.Client.Networking;
 using Automata.Client.Resources;
 using Automata.Kinds;
 

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Automata.Client;
+using Automata.Client.Networking;
 
 namespace Automata.Devices
 {

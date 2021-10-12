@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using Automata.Client.Services;
 using Automata.Kinds;
 
 namespace Automata.Client.Resources

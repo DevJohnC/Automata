@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Automata.Client;
+using Automata.Client.Networking;
 using Automata.Devices.GrpcServices;
 using Automata.GrpcServices;
 using Grpc.Core;

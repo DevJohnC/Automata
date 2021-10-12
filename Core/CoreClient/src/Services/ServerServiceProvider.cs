@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Automata.Client.Networking;
 
 namespace Automata.Client.Services
 {

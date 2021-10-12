@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using Automata.Client.Networking;
 using Automata.Kinds;
 
 namespace Automata.Client

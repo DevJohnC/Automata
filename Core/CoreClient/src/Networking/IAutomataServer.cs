@@ -1,8 +1,9 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
+using Automata.Client.Services;
 
-namespace Automata.Client
+namespace Automata.Client.Networking
 {
     public interface IAutomataServer
     {

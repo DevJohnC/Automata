@@ -1,4 +1,6 @@
-﻿namespace Automata.Client.Services
+﻿using Automata.Client.Networking;
+
+namespace Automata.Client.Services
 {
     /// <summary>
     /// Provides client networking services to an automata server implementation.

@@ -21,12 +21,5 @@ namespace Automata.Computers.Agent
             }
             return Task.FromResult(new Empty());
         }
-
-        public override Task GetDeviceStatePairs(DeviceStatePairRequest request,
-            IServerStreamWriter<DeviceStatePair> responseStream,
-            ServerCallContext context)
-        {
-            return Task.CompletedTask;
-        }
     }
 }

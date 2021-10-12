@@ -3,6 +3,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Automata.Client.Networking;
 using Automata.GrpcServices;
 using Automata.Kinds;
 using Grpc.Core;

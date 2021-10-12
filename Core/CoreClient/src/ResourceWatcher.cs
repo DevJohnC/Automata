@@ -1,6 +1,7 @@
 ﻿namespace Automata.Client
 {
-    public interface IResourceWatcher
+    public class ResourceWatcher
     {
+        
     }
 }

@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public static class HostingFrameworkExtensions
+    public static class EventsHostingFrameworkExtensions
     {
         public static IServiceCollection AddEvents(this IServiceCollection services)
         {

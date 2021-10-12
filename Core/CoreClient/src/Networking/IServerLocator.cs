@@ -2,9 +2,9 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Automata.Client
+namespace Automata.Client.Networking
 {
-    public interface IServerLocator : IAsyncDisposable
+    public interface IServerLocator : IDisposable
     {
         event AsyncEventHandler<IServerLocator, Uri>? ServerAvailable;
         event AsyncEventHandler<IServerLocator, Uri>? ServerUnavailable;

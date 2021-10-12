@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Automata.Client
+namespace Automata.Client.Networking
 {
     /// <summary>
     /// Network of Automata servers.
     /// </summary>
-    public class AutomataNetwork
+    public abstract class AutomataNetwork
     {
         private readonly List<IAutomataServer> _servers = new();
 
-        public event AsyncEventHandler<AutomataNetwork, IAutomataServer> ServerAdded;
+        public event EventHandler<IAutomataServer>? ServerAdded;
         
         public NetworkKindGraph KindGraph { get; } = new();
 
@@ -25,9 +25,7 @@ namespace Automata.Client
             KindGraph.MergeServerGraph(server, server.KindGraph);
             _servers.Add(server);
 
-            var task = ServerAdded?.SerialInvoke(this, server, cancellationToken) ??
-                       Task.CompletedTask;
-            await task;
+            ServerAdded?.Invoke(this, server);
         }
     }
 }

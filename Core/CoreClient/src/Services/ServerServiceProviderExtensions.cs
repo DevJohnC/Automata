@@ -1,4 +1,6 @@
-﻿namespace Automata.Client.Services
+﻿using Automata.Client.Networking;
+
+namespace Automata.Client.Services
 {
     public static class ServerServiceProviderExtensions
     {
